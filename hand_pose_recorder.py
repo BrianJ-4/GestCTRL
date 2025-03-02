@@ -42,11 +42,20 @@ def main():
 
                 # Flip image for mirror view
                 cv2.imshow('Hand Tracking', cv2.flip(image, 1))
+
+                if reading and results.multi_hand_landmarks != None:
+                    save_gesture(hand_landmarks, name)
                         
                 # Press Esc to exit
                 key = cv2.waitKey(5)
                 if key == 27:
                     break
+                elif key == ord('n'):
+                    name = input("Enter Gesture Name: ")
+                    reading = True
+                elif key == ord('q'):
+                    name = None
+                    reading = False
     finally:
         cap.release()
         cv2.destroyAllWindows()
