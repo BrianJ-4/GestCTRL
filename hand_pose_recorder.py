@@ -80,8 +80,7 @@ def process_landmarks(hand_landmarks):
     max_val = max([abs(num) for num in flattened_landmarks]) # Get the max absolute value
     if max_val == 0:
         max_val = 1
-    for num in flattened_landmarks:
-        processed_landmarks.append(num / max_val) # Divide every number by the max absolute value
+    processed_landmarks = (np.array(flattened_landmarks) / max_val).tolist() # Divide every number by the max absolute value
 
     return processed_landmarks
 
