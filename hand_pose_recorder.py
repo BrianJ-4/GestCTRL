@@ -62,3 +62,15 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+def save_gesture(hand_landmarks, name):
+    processed_landmarks = process_landmarks(hand_landmarks)
+
+def process_landmarks(hand_landmarks):
+    landmarks = []
+
+    # Extract x and y coordinates of each landmark normalized to wrist position
+    for landmark in hand_landmarks.landmark:
+        xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
+        yCoordinate = landmark.y - hand_landmarks.landmark[0].y
+        landmarks.append([xCoordinate, yCoordinate])
