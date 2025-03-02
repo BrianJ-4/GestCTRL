@@ -42,9 +42,6 @@ def main():
 
                 # Flip image for mirror view
                 cv2.imshow('Hand Tracking', cv2.flip(image, 1))
-
-                if reading and results.multi_hand_landmarks != None:
-                    save_gesture(hand_landmarks, name)
                         
                 # Press Esc to exit
                 key = cv2.waitKey(5)
@@ -56,6 +53,8 @@ def main():
                 elif key == ord('q'):
                     name = None
                     reading = False
+                elif key == 13 and reading and results.multi_hand_landmarks != None:
+                    save_gesture(hand_landmarks, name)
     finally:
         cap.release()
         cv2.destroyAllWindows()
