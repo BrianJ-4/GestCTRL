@@ -62,6 +62,9 @@ def main():
 
 def save_gesture(hand_landmarks, name):
     processed_landmarks = process_landmarks(hand_landmarks)
+    with open('gestures.csv', mode = 'a', newline = '') as file:
+        writer = csv.writer(file)
+        writer.writerow([name] + processed_landmarks)
 
 def process_landmarks(hand_landmarks):
     landmarks = []
