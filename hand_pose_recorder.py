@@ -60,9 +60,6 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
 
-if __name__ == "__main__":
-    main()
-
 def save_gesture(hand_landmarks, name):
     processed_landmarks = process_landmarks(hand_landmarks)
 
@@ -74,3 +71,19 @@ def process_landmarks(hand_landmarks):
         xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
         yCoordinate = landmark.y - hand_landmarks.landmark[0].y
         landmarks.append([xCoordinate, yCoordinate])
+
+    # Flatten landmarks into 1D list
+    flattened_landmarks = np.array(landmarks).flatten().tolist()
+
+    # Normalize landmarks into -1 to 1 range based on max absolute value
+    processed_landmarks = []
+    max_val = max([abs(num) for num in flattened_landmarks]) # Get the max absolute value
+    if max_val == 0:
+        max_val = 1
+    for num in flattened_landmarks:
+        processed_landmarks.append(num / max_val) # Divide every number by the max absolute value
+
+    return processed_landmarks
+
+if __name__ == "__main__":
+    main()
