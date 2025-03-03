@@ -1,8 +1,8 @@
+import csv
 import cv2
 import mediapipe as mp
-import time
-import csv
 import numpy as np
+import time
 
 # Initialize MediaPipe Hands
 mp_drawing = mp.solutions.drawing_utils
