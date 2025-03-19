@@ -14,7 +14,7 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-GESTURE_LABELS = ["Open", "Closed","Peace","Thumbs Up", "Okay"]
+GESTURE_LABELS = ["Open", "Closed","Peace","Thumbs Up", "Okay", "RockNRoll", "Three", "Point"]
 
 def main():
     # Open webcam
@@ -48,8 +48,9 @@ def main():
                         mp_drawing.draw_landmarks(
                             image, hand_landmarks, mp_hands.HAND_CONNECTIONS
                         )
-
-                        processed_landmarks = process_landmarks(hand_landmarks)
+                        #Problem with hand classification. Hands are switched
+                        handedness = results.multi_handedness[0].classification[0].label
+                        processed_landmarks = process_landmarks(hand_landmarks, handedness)
                         interpreter.set_tensor(input_details[0]['index'], processed_landmarks)
                         interpreter.invoke()
                         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
@@ -77,14 +78,18 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
 
-def process_landmarks(hand_landmarks):
+def process_landmarks(hand_landmarks, handedness):
     landmarks = []
 
     # Extract x and y coordinates of each landmark normalized to wrist position
     for landmark in hand_landmarks.landmark:
         xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
         yCoordinate = landmark.y - hand_landmarks.landmark[0].y
-        landmarks.append([xCoordinate, yCoordinate])
+
+        if handedness == 'Left':
+            landmarks.append([xCoordinate, yCoordinate])
+        else:
+            landmarks.append([-(xCoordinate), yCoordinate])
 
     # Flatten landmarks into 1D list
     flattened_landmarks = np.array(landmarks).flatten().tolist()
