@@ -3,7 +3,9 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import json
+from gesture_manager import GestureManager
 
+gesture_manager = GestureManager()
 
 # Initialize MediaPipe Hands
 mp_drawing = mp.solutions.drawing_utils
@@ -62,19 +64,7 @@ def main():
 
 def save_gesture(hand_landmarks, name):
     processed_landmarks = process_landmarks(hand_landmarks)
-    with open('data/gestures.csv', mode = 'a', newline = '') as file:
-        writer = csv.writer(file)
-        writer.writerow([name] + processed_landmarks)
-
-    try:
-        with open("data/poses.txt", "r") as file:
-            existing_poses = set(line.strip() for line in file)
-    except FileNotFoundError:
-        existing_poses = set()
-
-    if name not in existing_poses:
-        with open("data/poses.txt", "a") as f:
-            f.write(name + "\n")
+    gesture_manager.add_pose(name, processed_landmarks)
 
 def process_landmarks(hand_landmarks):
     landmarks = []
