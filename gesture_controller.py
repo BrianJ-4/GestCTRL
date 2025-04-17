@@ -82,11 +82,6 @@ class HandGestureController:
     def run(self):
         self.running = True
         self.movement_thread.start()
-        n = 5
-        frame_pose_counter = 0
-        last_detected_pose = None
-        confirmed_pose = "Unknown"
-
         try:
             while self.cap.isOpened() and self.running:
                 success, image = self.cap.read()
@@ -117,18 +112,8 @@ class HandGestureController:
 
                     if confidence > 0.90:
                         pose_name = self.GESTURE_LABELS[best_idx]
-                        if pose_name == last_detected_pose:
-                            frame_pose_counter += 1
-                        else:
-                            frame_pose_counter = 1
-                            last_detected_pose = pose_name
-
-                        if frame_pose_counter >= n:
-                            confirmed_pose = pose_name
                     else:
-                        frame_pose_counter = 0
-                        last_detected_pose = None
-                        confirmed_pose = "Unknown"
+                        pose_name = "Unknown"
 
                     if pose_name in ["Peace", "Left Click", "Right Click"]:
                         self.mouse_mode = True
