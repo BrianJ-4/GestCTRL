@@ -57,14 +57,10 @@ def main():
                     name = None
                     reading = False
                 elif key == 13 and reading and results.multi_hand_landmarks != None:
-                    save_gesture(hand_landmarks, name)
+                    gesture_manager.add_pose(name, process_landmarks(hand_landmarks))
     finally:
         cap.release()
         cv2.destroyAllWindows()
-
-def save_gesture(hand_landmarks, name):
-    processed_landmarks = process_landmarks(hand_landmarks)
-    gesture_manager.add_pose(name, processed_landmarks)
 
 def process_landmarks(hand_landmarks):
     landmarks = []
