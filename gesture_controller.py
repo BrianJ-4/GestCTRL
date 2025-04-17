@@ -24,7 +24,7 @@ class CursorMovementThread(threading.Thread):
                 dy = self.target_y - self.current_y
                 self.current_x += dx * self.smoothing
                 self.current_y += dy * self.smoothing
-                pyautogui.moveTo(self.current_x, self.current_y, _pause=False)
+                pyautogui.moveTo(self.current_x, self.current_y, _pause = False)
             time.sleep(0.01)
 
     def update_target(self, x, y):
@@ -45,10 +45,10 @@ class GestureController:
         self.cap = cv2.VideoCapture(0)
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
-            max_num_hands=1,
-            model_complexity=0,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
+            max_num_hands = 1,
+            model_complexity = 0,
+            min_detection_confidence = 0.5,
+            min_tracking_confidence = 0.5
         )
         self.interpreter = tflite.Interpreter(model_path = "model/gesture_model.tflite")
         self.interpreter.allocate_tensors()
@@ -136,14 +136,15 @@ class GestureController:
                             pyautogui.mouseDown()
                             self.mouse_held = "left"
                         elif pose_name == "Right Click" and self.mouse_held != "right":
-                            pyautogui.mouseDown(button='right')
+                            pyautogui.mouseDown(button = 'right')
                             self.mouse_held = "right"
                         elif pose_name == "Peace":
+                            # Allow movement, but no clicking
                             if self.mouse_held == "left":
                                 pyautogui.mouseUp()
                                 self.mouse_held = None
                             elif self.mouse_held == "right":
-                                pyautogui.mouseUp(button='right')
+                                pyautogui.mouseUp(button = 'right')
                                 self.mouse_held = None
 
                     elif pose_name == "Closed":
@@ -151,7 +152,7 @@ class GestureController:
                         self.mouse_mode = False
                         if self.mouse_held:
                             pyautogui.mouseUp()
-                            pyautogui.mouseUp(button='right')
+                            pyautogui.mouseUp(button = 'right')
                             self.mouse_held = None
 
                 cv2.putText(flipped_image, pose_name, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
