@@ -26,7 +26,7 @@ class GestureManager:
         with open(self.gesture_file, 'r') as file:
             rows = list(csv.reader(file))
         rows = [row for row in rows if row[0] != pose_name]
-        with open(self.gesture_file, 'w', newline='') as file:
+        with open(self.gesture_file, 'w', newline = '') as file:
             writer = csv.writer(file)
             writer.writerows(rows)
 
