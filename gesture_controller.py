@@ -39,7 +39,7 @@ class CursorMovementThread(threading.Thread):
     def stop(self):
         self.running = False
 
-class HandGestureController:
+class GestureController:
     def __init__(self):
         self.running = False
         self.cap = cv2.VideoCapture(0)
@@ -62,14 +62,23 @@ class HandGestureController:
 
     def process_landmarks(self, hand_landmarks):
         landmarks = []
+
+        # Extract x and y coordinates of each landmark normalized to wrist position
         for landmark in hand_landmarks.landmark:
-            x = landmark.x - hand_landmarks.landmark[0].x
-            y = landmark.y - hand_landmarks.landmark[0].y
-            landmarks.append([x, y])
-        flat = np.array(landmarks).flatten().tolist()
-        max_val = max([abs(num) for num in flat]) or 1
-        processed = (np.array(flat) / max_val).tolist()
-        return np.array([processed], dtype=np.float32)
+            xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
+            yCoordinate = landmark.y - hand_landmarks.landmark[0].y
+            landmarks.append([xCoordinate, yCoordinate])
+
+        # Flatten landmarks into 1D list
+        flattened_landmarks = np.array(landmarks).flatten().tolist()
+
+        # Normalize landmarks into -1 to 1 range based on max absolute value
+        max_val = max([abs(num) for num in flattened_landmarks]) # Get the max absolute value
+        if max_val == 0:
+            max_val = 1
+        processed_landmarks = (np.array(flattened_landmarks) / max_val).tolist() # Divide every number by the max absolute value
+        
+        return np.array([processed_landmarks], dtype = np.float32)
     
     def load_gesture_labels(self):
         try:
