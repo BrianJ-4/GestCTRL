@@ -1,5 +1,6 @@
 import csv
 import cv2
+import difflib
 import mediapipe as mp
 import numpy as np
 import time
@@ -48,7 +49,7 @@ def main():
                 if key == 27:
                     break
                 elif key == ord('n'):
-                    name = input("Enter Gesture Name: ")
+                    name = process_click(input("Enter Gesture Name: "))
                     reading = True
                 elif key == ord('q'):
                     name = None
@@ -85,6 +86,16 @@ def process_landmarks(hand_landmarks):
     processed_landmarks = (np.array(flattened_landmarks) / max_val).tolist() # Divide every number by the max absolute value
 
     return processed_landmarks
+
+def process_click(pose_name):
+    name = pose_name.lower()
+    left_click_names = ["left_click", "left click", "lclick", "clickl", "click left", "click_left"]
+    right_click_names = ["right_click", "right click", "rclick", "clickr", "click right", "click_right"]
+    if difflib.get_close_matches(name, left_click_names, n=1, cutoff=0.8):
+        return "LClick"
+    if difflib.get_close_matches(name, right_click_names, n=1, cutoff=0.8):
+        return "RClick"
+    return pose_name
 
 if __name__ == "__main__":
     main()

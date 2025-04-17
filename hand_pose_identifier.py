@@ -1,5 +1,4 @@
 import cv2
-import difflib
 import mediapipe as mp
 import numpy as np
 import pyautogui
@@ -12,9 +11,6 @@ mp_hands = mp.solutions.hands
 
 # Initialize PyAutoGUI
 screen_width, screen_height = pyautogui.size()
-
-#Screen Scaling
-scaling = 0.75
 
 # Load the TFLite model
 interpreter = tflite.Interpreter(model_path = "gesture_model.tflite")
@@ -124,12 +120,9 @@ def process_landmarks(hand_landmarks, handedness):
     return np.array([processed_landmarks], dtype = np.float32)
 
 def process_click(pose_name):
-    name = pose_name.lower()
-    left_click_names = ["left_click", "left click", "lclick", "clickl", "click left", "click_left", "left"]
-    right_click_names = ["right_click", "right click", "rclick", "clickr", "click right", "click_right", "right"]
-    if difflib.get_close_matches(name, left_click_names, n=1, cutoff=0.6):
+    if pose_name == "LClick":
         pyautogui.click()
-    elif difflib.get_close_matches(name, right_click_names, n=1, cutoff=0.6):
+    if pose_name == "RClick":
         pyautogui.click(button='right')
 
 if __name__ == "__main__":
