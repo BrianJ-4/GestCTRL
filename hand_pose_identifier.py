@@ -1,11 +1,16 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import pyautogui
 import tensorflow.lite as tflite
+import time
 
 # Initialize MediaPipe Hands
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
+
+# Initialize PyAutoGUI
+screen_width, screen_height = pyautogui.size()
 
 # Load the TFLite model
 interpreter = tflite.Interpreter(model_path = "gesture_model.tflite")
@@ -14,11 +19,12 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-GESTURE_LABELS = ["Open", "Closed","Peace","Thumbs Up", "Okay"]
+GESTURE_LABELS = ["Open", "Closed","Peace","Thumbs Up", "Okay", "RockNRoll", "Three", "Point", "LClick", "RClick"]
 
 def main():
     # Open webcam
     cap = cv2.VideoCapture(0)
+    click_time, click_cooldown = 0, .5
     try:
         with mp_hands.Hands(
             max_num_hands = 1,
@@ -48,8 +54,15 @@ def main():
                         mp_drawing.draw_landmarks(
                             image, hand_landmarks, mp_hands.HAND_CONNECTIONS
                         )
+                        #Problem with hand classification. Hands are switched
+                        handedness = results.multi_handedness[0].classification[0].label
+                        
+                        x_coordinate = screen_width - (hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].x * screen_width)
+                        y_coordinate = (hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].y * screen_height)
 
-                        processed_landmarks = process_landmarks(hand_landmarks)
+                        pyautogui.moveTo(x_coordinate, y_coordinate)
+
+                        processed_landmarks = process_landmarks(hand_landmarks, handedness)
                         interpreter.set_tensor(input_details[0]['index'], processed_landmarks)
                         interpreter.invoke()
                         predictions = interpreter.get_tensor(output_details[0]['index'])[0]
@@ -60,10 +73,15 @@ def main():
                             pose_name = GESTURE_LABELS[best_idx]
                         else:
                             pose_name = "Unknown"
+
+                        cur_time = time.time()
+                        if cur_time - click_time > click_cooldown:
+                            process_click(pose_name)
+                            click_time = cur_time
                         print(pose_name)
 
 
-                # Flip image for mirror view and display pose name
+                # # Flip image for mirror view and display pose name
                 flipped_image = cv2.flip(image, 1)
                 cv2.putText(flipped_image, pose_name, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 cv2.putText(flipped_image, str(confidence), (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -77,14 +95,18 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
 
-def process_landmarks(hand_landmarks):
+def process_landmarks(hand_landmarks, handedness):
     landmarks = []
 
     # Extract x and y coordinates of each landmark normalized to wrist position
     for landmark in hand_landmarks.landmark:
         xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
         yCoordinate = landmark.y - hand_landmarks.landmark[0].y
-        landmarks.append([xCoordinate, yCoordinate])
+
+        if handedness == 'Left':
+            landmarks.append([xCoordinate, yCoordinate])
+        else:
+            landmarks.append([-(xCoordinate), yCoordinate])
 
     # Flatten landmarks into 1D list
     flattened_landmarks = np.array(landmarks).flatten().tolist()
@@ -96,6 +118,12 @@ def process_landmarks(hand_landmarks):
     processed_landmarks = (np.array(flattened_landmarks) / max_val).tolist() # Divide every number by the max absolute value
     
     return np.array([processed_landmarks], dtype = np.float32)
+
+def process_click(pose_name):
+    if pose_name == "LClick":
+        pyautogui.click()
+    if pose_name == "RClick":
+        pyautogui.click(button='right')
 
 if __name__ == "__main__":
     main()
