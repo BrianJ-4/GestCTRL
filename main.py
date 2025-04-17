@@ -1,9 +1,9 @@
 import threading
 import time
-from gesture_controller import HandGestureController
+from gesture_controller import GestureController
 
 def main():
-    gesture_controller = HandGestureController()
+    gesture_controller = GestureController()
     gesture_thread = threading.Thread(target = gesture_controller.run, daemon = True)
     gesture_thread.start()
 
