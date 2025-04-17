@@ -1,4 +1,5 @@
 import cv2
+import difflib
 import mediapipe as mp
 import numpy as np
 import pyautogui
@@ -12,6 +13,9 @@ mp_hands = mp.solutions.hands
 # Initialize PyAutoGUI
 screen_width, screen_height = pyautogui.size()
 
+#Screen Scaling
+scaling = 0.75
+
 # Load the TFLite model
 interpreter = tflite.Interpreter(model_path = "gesture_model.tflite")
 interpreter.allocate_tensors()
@@ -24,7 +28,7 @@ GESTURE_LABELS = ["Open", "Closed","Peace","Thumbs Up", "Okay", "RockNRoll", "Th
 def main():
     # Open webcam
     cap = cv2.VideoCapture(0)
-    click_time, click_cooldown = 0, 1
+    click_time, click_cooldown = 0, .5
     try:
         with mp_hands.Hands(
             max_num_hands = 1,
@@ -59,6 +63,7 @@ def main():
                         
                         x_coordinate = screen_width - (hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].x * screen_width)
                         y_coordinate = (hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP].y * screen_height)
+
                         pyautogui.moveTo(x_coordinate, y_coordinate)
 
                         processed_landmarks = process_landmarks(hand_landmarks, handedness)
@@ -119,9 +124,12 @@ def process_landmarks(hand_landmarks, handedness):
     return np.array([processed_landmarks], dtype = np.float32)
 
 def process_click(pose_name):
-    if pose_name == "LClick":
+    name = pose_name.lower()
+    left_click_names = ["left_click", "left click", "lclick", "clickl", "click left", "click_left", "left"]
+    right_click_names = ["right_click", "right click", "rclick", "clickr", "click right", "click_right", "right"]
+    if difflib.get_close_matches(name, left_click_names, n=1, cutoff=0.6):
         pyautogui.click()
-    if pose_name == "RClick":
+    elif difflib.get_close_matches(name, right_click_names, n=1, cutoff=0.6):
         pyautogui.click(button='right')
 
 if __name__ == "__main__":
