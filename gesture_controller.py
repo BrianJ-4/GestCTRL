@@ -7,6 +7,7 @@ import tensorflow.lite as tflite
 import time
 import json
 from pose_action_manager import PoseActionManager
+from action_controller import ActionController
 
 
 class CursorMovementThread(threading.Thread):
@@ -62,6 +63,7 @@ class GestureController:
         self.mouse_mode = False
         self.mouse_held = None
         self.pose_action_manager = PoseActionManager()
+        self.action_controller = ActionController()
 
     def process_landmarks(self, hand_landmarks):
         landmarks = []
@@ -161,8 +163,7 @@ class GestureController:
                                 self.mouse_held = None
                         
                         elif action != "":
-                            # Pass to action controller
-                            print("To do")
+                            self.action_controller.perform_action(action)
 
                 cv2.putText(flipped_image, pose_name, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 if confidence:

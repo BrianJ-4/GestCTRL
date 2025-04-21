@@ -8,6 +8,7 @@ class PoseActionManager():
         try:
             with open("data/mappings.json", "r") as file:
                 data = json.load(file)
+                return data
         except FileNotFoundError:
             print("Warning: mappings.json not found. Using empty mappings dictionary.")
             return {}
