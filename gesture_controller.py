@@ -6,6 +6,9 @@ import threading
 import tensorflow.lite as tflite
 import time
 import json
+from pose_action_manager import PoseActionManager
+from action_controller import ActionController
+
 
 class CursorMovementThread(threading.Thread):
     def __init__(self):
@@ -59,6 +62,8 @@ class GestureController:
         self.movement_thread = CursorMovementThread()
         self.mouse_mode = False
         self.mouse_held = None
+        self.pose_action_manager = PoseActionManager()
+        self.action_controller = ActionController()
 
     def process_landmarks(self, hand_landmarks):
         landmarks = []
@@ -124,36 +129,41 @@ class GestureController:
                     else:
                         pose_name = "Unknown"
 
-                    if pose_name in ["Peace", "Left Click", "Right Click"]:
-                        self.mouse_mode = True
-                        self.movement_thread.activate()
-                        cursor_point = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
-                        finger_x = (1 - cursor_point.x) * self.screen_width
-                        finger_y = cursor_point.y * self.screen_height
-                        self.movement_thread.update_target(finger_x, finger_y)
+                    if pose_name != "Unknown":
+                        action = self.pose_action_manager.get_pose_action(pose_name)
+                        if action in ["Mouse Mode", "Left Click", "Right Click"]:
+                            self.mouse_mode = True
+                            self.movement_thread.activate()
+                            cursor_point = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+                            finger_x = (1 - cursor_point.x) * self.screen_width
+                            finger_y = cursor_point.y * self.screen_height
+                            self.movement_thread.update_target(finger_x, finger_y)
 
-                        if pose_name == "Left Click" and self.mouse_held != "left":
-                            pyautogui.mouseDown()
-                            self.mouse_held = "left"
-                        elif pose_name == "Right Click" and self.mouse_held != "right":
-                            pyautogui.mouseDown(button = 'right')
-                            self.mouse_held = "right"
-                        elif pose_name == "Peace":
-                            # Allow movement, but no clicking
-                            if self.mouse_held == "left":
+                            if action == "Left Click" and self.mouse_held != "left":
+                                pyautogui.mouseDown()
+                                self.mouse_held = "left"
+                            elif action == "Right Click" and self.mouse_held != "right":
+                                pyautogui.mouseDown(button = 'right')
+                                self.mouse_held = "right"
+                            elif action == "Mouse Mode":
+                                # Allow movement, but no clicking
+                                if self.mouse_held == "left":
+                                    pyautogui.mouseUp()
+                                    self.mouse_held = None
+                                elif self.mouse_held == "right":
+                                    pyautogui.mouseUp(button = 'right')
+                                    self.mouse_held = None
+
+                        elif action == "Neutral":
+                            self.movement_thread.deactivate()
+                            self.mouse_mode = False
+                            if self.mouse_held:
                                 pyautogui.mouseUp()
-                                self.mouse_held = None
-                            elif self.mouse_held == "right":
                                 pyautogui.mouseUp(button = 'right')
                                 self.mouse_held = None
-
-                    elif pose_name == "Closed":
-                        self.movement_thread.deactivate()
-                        self.mouse_mode = False
-                        if self.mouse_held:
-                            pyautogui.mouseUp()
-                            pyautogui.mouseUp(button = 'right')
-                            self.mouse_held = None
+                        
+                        elif action != "":
+                            self.action_controller.perform_action(action)
 
                 cv2.putText(flipped_image, pose_name, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 if confidence:
