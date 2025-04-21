@@ -7,7 +7,7 @@ def load_gesture_data():
     gestures = []       # Stores pose landmark coordinates
     labels = []         # Stores gesture numeric keys
     label_dict = {}     # Maps gesture names to numeric keys
-    with open('gestures.csv', newline = '') as file:
+    with open('data/gestures.csv', newline = '') as file:
         reader = csv.reader(file)
         label_counter = 0
         for row in reader:
@@ -44,12 +44,10 @@ def train_model():
     loss, accuracy = model.evaluate(x_testing, y_testing)
     print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
-    model.save("gesture_model.keras")  # Save Keras model
+    model.save("model/gesture_model.keras")  # Save Keras model
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     tflite_model = converter.convert()
 
-    with open("gesture_model.tflite", "wb") as f:
+    with open("model/gesture_model.tflite", "wb") as f:
         f.write(tflite_model)
     print("Model saved as gesture_model.tflite")
-
-train_model()
