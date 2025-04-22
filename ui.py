@@ -6,12 +6,14 @@ class GestureApp:
     def __init__(self, root):
         self.root = root
         self.root.title("GestCTRL")
+        img = tk.PhotoImage(file = "./assets/icons/hand.png")
+        self.root.iconphoto(False, img)
         self.set_geometry(900, 600)
         self.root.resizable(False, False)
         sv_ttk.set_theme("dark")
-        self.add_icon = tk.PhotoImage(file='./assets/icons/add.png')
-        self.train_icon = tk.PhotoImage(file='./assets/icons/train.png')
-        self.settings_icon = tk.PhotoImage(file='./assets/icons/settings.png')
+        self.add_icon = tk.PhotoImage(file = './assets/icons/add.png')
+        self.train_icon = tk.PhotoImage(file = './assets/icons/train.png')
+        self.settings_icon = tk.PhotoImage(file = './assets/icons/settings.png')
         self.setup_ui()
 
     def set_geometry(self, width, height):
