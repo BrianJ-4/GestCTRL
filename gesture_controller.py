@@ -65,14 +65,18 @@ class GestureController:
         self.pose_action_manager = PoseActionManager()
         self.action_controller = ActionController()
 
-    def process_landmarks(self, hand_landmarks):
+    def process_landmarks(self, hand_landmarks, handedness):
         landmarks = []
 
         # Extract x and y coordinates of each landmark normalized to wrist position
         for landmark in hand_landmarks.landmark:
             xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
             yCoordinate = landmark.y - hand_landmarks.landmark[0].y
-            landmarks.append([xCoordinate, yCoordinate])
+
+            if handedness == 'Left':
+                landmarks.append([xCoordinate, yCoordinate])
+            elif handedness == 'Right':
+                landmarks.append([-xCoordinate, yCoordinate])
 
         # Flatten landmarks into 1D list
         flattened_landmarks = np.array(landmarks).flatten().tolist()
@@ -116,7 +120,8 @@ class GestureController:
                     mp.solutions.drawing_utils.draw_landmarks(
                         flipped_image, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
 
-                    input_tensor = self.process_landmarks(hand_landmarks)
+                    handedness = results.multi_handedness[0].classification[0].label
+                    input_tensor = self.process_landmarks(hand_landmarks, handedness)
                     self.interpreter.set_tensor(self.input_details[0]['index'], input_tensor)
                     self.interpreter.invoke()
                     predictions = self.interpreter.get_tensor(self.output_details[0]['index'])[0]
