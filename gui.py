@@ -125,7 +125,7 @@ class GestureApp:
         pose_label.pack(pady = 20)
 
         # Dropdown for actions
-        actions = self.action_controller.get_actions() + ["Right Click", "Left CLick", "Mouse Mode", "Neutral"]
+        actions = self.action_controller.get_actions() + ["Right Click", "Left Click", "Mouse Mode", "Neutral"]
         action = tk.StringVar(value = action)
         action_dropdown = ttk.Combobox(menu, textvariable = action, values = actions, state = "readonly")
         action_dropdown.pack(pady = 10)
