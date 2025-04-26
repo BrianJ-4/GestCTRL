@@ -88,12 +88,6 @@ class GestureApp:
         for pose, action in mappings.items():
             self.pose_tree.insert("", "end", values = (pose, action))
 
-    def updateListPoses(self):
-        self.add_pose_tree.delete(*self.add_pose_tree.get_children())
-        poses = self.gesture_manager.get_all_poses()
-        for pose in poses:
-            self.add_pose_tree.insert("", "end", values = pose)
-
     def add_pose_ui(self):
         self.add_pose_window = Toplevel(self.root)
         self.add_pose_window.title("Add Pose")
@@ -118,6 +112,24 @@ class GestureApp:
         self.add_pose_tree.heading("pose", text="Pose")
         self.add_pose_tree.pack(side="top", anchor="n", fill="both", expand=True)
         self.updateListPoses()
+
+        #Name Gesture and Add Pose Button
+        self.add_pose_name = StringVar()
+        self.add_pose_entry = tk.Entry(self.add_pose_left_frame, textvariable=self.add_pose_name, fg="#A9A9AC")
+        self.add_pose_entry.insert(0, "Insert Pose Name")
+        self.add_pose_entry.pack(pady=10)
+        self.add_pose_entry.bind("<FocusIn>", self.entryFieldPlaceholder)
+
+    def updateListPoses(self):
+        self.add_pose_tree.delete(*self.add_pose_tree.get_children())
+        poses = self.gesture_manager.get_all_poses()
+        for pose in poses:
+            self.add_pose_tree.insert("", "end", values = pose)
+    
+    def entryFieldPlaceholder(self, event):
+        if self.add_pose_entry.get() == "Insert Pose Name":
+            self.add_pose_entry.delete(0, "end")
+            self.add_pose_entry.config(fg="#FFFFFF")
 
 if __name__ == "__main__":
     root = tk.Tk()
