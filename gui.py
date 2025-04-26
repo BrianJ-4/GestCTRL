@@ -59,7 +59,7 @@ class GestureApp:
         self.add_pose_button.pack(pady=10)
 
         #Train Button
-        self.train_button = ttk.Button(self.pose_frame, text="Train", style="Accent.TButton", command = self.train_model_clicked )
+        self.train_button = ttk.Button(self.pose_frame, text="Train", style="Accent.TButton", state = "disabled", command = self.train_model_clicked )
         self.train_button.pack(pady=10)
 
         #Settings Button
@@ -81,8 +81,16 @@ class GestureApp:
             print("Training started")
             train_model()
             self.train_button.config(state = "normal", text = "Train")
+            self.changed = False
+            self.update_train_button()
             print("Training complete")
         threading.Thread(target = train_thread, daemon = True).start()
+
+    def update_train_button(self):
+        if self.changed:
+            self.train_button.config(state = "enabled", text = "Train")
+        else:
+            self.train_button.config(state = "disabled", text = "Train")
 
     # Update the tree view with pose and action mappings
     def updateList(self):
@@ -140,4 +148,6 @@ class GestureApp:
     def delete_pose(self, pose, window):
         self.gesture_manager.delete_pose(pose)
         self.updateList()
+        self.changed = True
+        self.update_train_button()
         window.destroy()
