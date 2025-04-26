@@ -2,6 +2,7 @@ import cv2
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 from PIL import ImageTk, Image
 import sv_ttk
 import threading
@@ -96,8 +97,8 @@ class GestureApp:
         self.add_pose_window.config(bg="#3b3b3b")
 
         #Preview Frame
-        self.add_pose_left_frame = ttk.Frame(self.add_pose_window, width=650, height=300)
-        self.add_pose_left_frame.pack(side="left", fill="both", pady = 10)
+        self.add_pose_left_frame = ttk.Frame(self.add_pose_window, width=650, height=500)
+        self.add_pose_left_frame.pack(side="left", anchor="n", fill="x", pady = 10, padx=10)
         self.add_pose_left_frame.pack_propagate(False)
         self.add_pose_preview_label = tk.Label(self.add_pose_left_frame)
         self.add_pose_preview_label.pack(fill="both", expand=True)
@@ -121,7 +122,7 @@ class GestureApp:
         self.add_pose_entry.bind("<FocusIn>", self.entryFieldPlaceholder)
 
         #Add Pose Button
-        self.add_pose_record_button = ttk.Button(self.add_pose_right_frame, text="Record Pose")
+        self.add_pose_record_button = ttk.Button(self.add_pose_right_frame, text="Record Pose", command=self.record_button_clicked)
         self.add_pose_record_button.pack(pady=(5, 10))
 
     def updateListPoses(self):
@@ -134,6 +135,15 @@ class GestureApp:
         if self.add_pose_entry.get() == "Insert Pose Name":
             self.add_pose_entry.delete(0, "end")
             self.add_pose_entry.config(fg="#FFFFFF")
+
+    def record_button_clicked(self):
+        recorded_pose = self.add_pose_name.get().strip()
+        if not recorded_pose or recorded_pose == "Insert Pose Name":
+            messagebox.showwarning("showwarning", "Please Enter a Name", parent=self.add_pose_window)
+            return
+        self.gesture_manager.add_pose(recorded_pose)
+        self.updateListPoses()
+            
 
 if __name__ == "__main__":
     root = tk.Tk()
