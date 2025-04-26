@@ -13,17 +13,28 @@ from gesture_manager import GestureManager
 
 class GestureApp:
     def __init__(self, root):
+        # Window setup
         self.root = root
         self.root.title("GestCTRL")
         self.set_geometry(self.root, 900, 600)
         self.root.resizable(False, False)
         self.root.config(bg="#3b3b3b")
+
+        # Create objects to interact with backend data
         self.pose_action_manager = PoseActionManager()
         self.action_controller = ActionController()
         self.gesture_manager = GestureManager()
+
+        # Set theme
         sv_ttk.set_theme("dark")
+
+        # Load icons
         self.save_icon = tk.PhotoImage(file = './assets/icons/save.png')
         self.delete_icon = tk.PhotoImage(file = './assets/icons/delete.png')
+
+        # Used to track when the model should be retrained based on user adding/deleting poses
+        self.changed = False
+
         self.start_ui()
 
     def set_geometry(self, parent, width, height):
