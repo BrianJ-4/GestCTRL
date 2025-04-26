@@ -97,28 +97,32 @@ class GestureApp:
 
         #Preview Frame
         self.add_pose_right_frame = ttk.Frame(self.add_pose_window, width=650, height=300)
-        self.add_pose_right_frame.pack(side="right", fill="both", padx = 10, pady = 10)
+        self.add_pose_right_frame.pack(side="right", fill="both", pady = 10)
         self.add_pose_right_frame.pack_propagate(False)
         self.add_pose_preview_label = tk.Label(self.add_pose_right_frame)
         self.add_pose_preview_label.pack(fill="both", expand=True)
 
         #Pose List and Add Name
         self.add_pose_left_frame = tk.Frame(self.add_pose_window, bg="#636363", width=300, height=300)
-        self.add_pose_left_frame.pack(side="left", fill="x", padx = 5, pady = 5)
+        self.add_pose_left_frame.pack(side="left", fill="both", padx = 5, pady = 5)
         self.add_pose_left_frame.pack_propagate(False)
         col = ("pose")
         self.add_pose_tree = ttk.Treeview(self.add_pose_left_frame, columns= col, show="headings")
         self.add_pose_tree.column("pose", anchor="center", width=100)
         self.add_pose_tree.heading("pose", text="Pose")
-        self.add_pose_tree.pack(side="top", anchor="n", fill="both", expand=True)
+        self.add_pose_tree.pack(anchor="n", fill="both", expand=True)
         self.updateListPoses()
 
-        #Name Gesture and Add Pose Button
+        #Pose Name Entry
         self.add_pose_name = StringVar()
-        self.add_pose_entry = tk.Entry(self.add_pose_left_frame, textvariable=self.add_pose_name, fg="#A9A9AC")
+        self.add_pose_entry = tk.Entry(self.add_pose_left_frame, textvariable=self.add_pose_name, justify="center", font=("Arial, 14"), fg="#A9A9AC")
         self.add_pose_entry.insert(0, "Insert Pose Name")
         self.add_pose_entry.pack(pady=10)
         self.add_pose_entry.bind("<FocusIn>", self.entryFieldPlaceholder)
+
+        #Add Pose Button
+        self.add_pose_record_button = ttk.Button(self.add_pose_left_frame, text="Record Pose")
+        self.add_pose_record_button.pack(pady=10)
 
     def updateListPoses(self):
         self.add_pose_tree.delete(*self.add_pose_tree.get_children())
