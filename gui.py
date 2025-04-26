@@ -18,6 +18,7 @@ class GestureApp:
         self.root.resizable(False, False)
         self.root.config(bg="#3b3b3b")
         self.pose_action_manager = PoseActionManager()
+        self.gesture_manager = GestureManager()
         sv_ttk.set_theme("dark")
         self.start_ui()
 
@@ -51,7 +52,7 @@ class GestureApp:
         self.preview_label.pack(side="top", anchor="n", fill="x", expand=True)
 
         #Add Pose Button
-        self.add_pose_button = ttk.Button(self.button_row_frame, text="Add Pose")
+        self.add_pose_button = ttk.Button(self.button_row_frame, text="Add Pose", command=self.add_pose_ui)
         self.add_pose_button.pack(side="left", padx=(50, 10))
 
         #Train Button
@@ -86,6 +87,37 @@ class GestureApp:
         mappings = self.pose_action_manager.get_mappings()
         for pose, action in mappings.items():
             self.pose_tree.insert("", "end", values = (pose, action))
+
+    def updateListPoses(self):
+        self.add_pose_tree.delete(*self.add_pose_tree.get_children())
+        poses = self.gesture_manager.get_all_poses()
+        for pose in poses:
+            self.add_pose_tree.insert("", "end", values = pose)
+
+    def add_pose_ui(self):
+        self.add_pose_window = Toplevel(self.root)
+        self.add_pose_window.title("Add Pose")
+        self.set_geometry(self.add_pose_window, 900, 600)
+        self.add_pose_window.resizable(False, False)
+        self.add_pose_window.config(bg="#3b3b3b")
+
+        #Preview Frame
+        self.add_pose_right_frame = ttk.Frame(self.add_pose_window, width=650, height=300)
+        self.add_pose_right_frame.pack(side="right", fill="both", padx = 10, pady = 10)
+        self.add_pose_right_frame.pack_propagate(False)
+        self.add_pose_preview_label = tk.Label(self.add_pose_right_frame)
+        self.add_pose_preview_label.pack(fill="both", expand=True)
+
+        #Pose List and Add Name
+        self.add_pose_left_frame = tk.Frame(self.add_pose_window, bg="#636363", width=300, height=300)
+        self.add_pose_left_frame.pack(side="left", fill="x", padx = 5, pady = 5)
+        self.add_pose_left_frame.pack_propagate(False)
+        col = ("pose")
+        self.add_pose_tree = ttk.Treeview(self.add_pose_left_frame, columns= col, show="headings")
+        self.add_pose_tree.column("pose", anchor="center", width=100)
+        self.add_pose_tree.heading("pose", text="Pose")
+        self.add_pose_tree.pack(side="top", anchor="n", fill="both", expand=True)
+        self.updateListPoses()
 
 if __name__ == "__main__":
     root = tk.Tk()
