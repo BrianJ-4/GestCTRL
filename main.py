@@ -1,5 +1,7 @@
 import threading
 import time
+import tkinter as tk
+from gui import GestureApp
 from gesture_controller import GestureController
 
 def main():
@@ -9,14 +11,16 @@ def main():
 
     print("Gesture controller started. Press Ctrl+C to exit.")
 
-    try:
-        while True:
-            time.sleep(1)  # This keeps the main thread alive
-            # UI event loop goes here
-    except KeyboardInterrupt:
-        print("Stopping")
+    root = tk.Tk()
+    app = GestureApp(root)
+
+    def on_close():
         gesture_controller.stop()
         gesture_thread.join()
+        root.destroy()
+
+    root.protocol("WM_DELETE_WINDOW", on_close)  # Handle window closing properly
+    root.mainloop()
 
 if __name__ == "__main__":
     main()
