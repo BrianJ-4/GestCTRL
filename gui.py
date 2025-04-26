@@ -8,6 +8,8 @@ import threading
 
 from model_trainer import train_model
 from pose_action_manager import PoseActionManager
+from action_controller import ActionController
+from gesture_manager import GestureManager
 
 class GestureApp:
     def __init__(self, root):
@@ -17,7 +19,11 @@ class GestureApp:
         self.root.resizable(False, False)
         self.root.config(bg="#3b3b3b")
         self.pose_action_manager = PoseActionManager()
+        self.action_controller = ActionController()
+        self.gesture_manager = GestureManager()
         sv_ttk.set_theme("dark")
+        self.save_icon = tk.PhotoImage(file = './assets/icons/save.png')
+        self.delete_icon = tk.PhotoImage(file = './assets/icons/delete.png')
         self.start_ui()
 
     def set_geometry(self, parent, width, height):
@@ -38,6 +44,7 @@ class GestureApp:
         self.pose_tree.heading("pose", text="Pose")
         self.pose_tree.column("action", anchor="center", width=100)
         self.pose_tree.heading("action", text="Action")
+        self.pose_tree.bind("<Double-1>", self.open_pose_menu)
         self.pose_tree.pack(fill="both", expand=True)
 
         #Preview Frame (Here as an example)
@@ -83,3 +90,54 @@ class GestureApp:
         mappings = self.pose_action_manager.get_mappings()
         for pose, action in mappings.items():
             self.pose_tree.insert("", "end", values = (pose, action))
+
+    def open_pose_menu(self, event):
+        selected_item = self.pose_tree.focus()
+        pose, action = self.pose_tree.item(selected_item, "values")
+
+        menu = Toplevel(self.root)
+        menu.title(f"Edit Pose: {pose}")
+        self.set_geometry(menu, 400, 250)
+        menu.resizable(False, False)
+        menu.config(bg = "#3b3b3b")
+
+        # Pose name label
+        pose_label = ttk.Label(menu, text = pose, font = ("Arial", 14), background = "#3b3b3b")
+        pose_label.pack(pady = 20)
+
+        # Dropdown for actions
+        actions = self.action_controller.get_actions() + ["Right Click", "Left CLick", "Mouse Mode", "Neutral"]
+        action = tk.StringVar(value = action)
+        action_dropdown = ttk.Combobox(menu, textvariable = action, values = actions, state = "readonly")
+        action_dropdown.pack(pady = 10)
+
+        # Save Button
+        save_button = ttk.Button(
+            menu,
+            image = self.save_icon,
+            text = "Save Mapping",
+            compound = tk.LEFT,
+            command = lambda: self.save_action(pose, action.get(), menu),
+            style = "Accent.TButton"
+        )
+        save_button.pack(pady = 10)
+
+        # Delete Button
+        delete_button = ttk.Button(
+            menu,
+            image = self.delete_icon,
+            text = "Delete Pose",
+            compound = tk.LEFT,
+            command=lambda: self.delete_pose(pose, menu)
+        )
+        delete_button.pack(pady = 10)
+
+    def save_action(self, pose, action, window):
+        self.pose_action_manager.set_pose_action(pose, action)
+        self.updateList()
+        window.destroy()
+
+    def delete_pose(self, pose, window):
+        self.gesture_manager.delete_pose(pose)
+        self.updateList()
+        window.destroy()

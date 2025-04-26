@@ -18,6 +18,7 @@ class PoseActionManager():
             json.dump(self.mappings, file)
     
     def get_pose_action(self, pose):
+        self.mappings = self.load_mappings()
         return self.mappings.get(pose)
     
     def set_pose_action(self, pose, action):
