@@ -12,7 +12,7 @@ from action_controller import ActionController
 from gesture_manager import GestureManager
 
 class GestureApp:
-    def __init__(self, root):
+    def __init__(self, root, gesture_controller):
         # Window setup
         self.root = root
         self.root.title("GestCTRL")
@@ -24,6 +24,7 @@ class GestureApp:
         self.pose_action_manager = PoseActionManager()
         self.action_controller = ActionController()
         self.gesture_manager = GestureManager()
+        self.gesture_controller = gesture_controller
 
         # Set theme
         sv_ttk.set_theme("dark")
@@ -91,6 +92,7 @@ class GestureApp:
             self.train_button.config(state = "disabled", text = "Training...")
             print("Training started")
             train_model()
+            self.gesture_controller.reload_model()
             self.train_button.config(state = "normal", text = "Train")
             self.changed = False
             self.update_train_button()

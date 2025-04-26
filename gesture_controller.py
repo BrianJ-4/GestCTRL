@@ -185,3 +185,11 @@ class GestureController:
     def stop(self):
         self.running = False
         self.movement_thread.stop()
+
+    def reload_model(self):
+        self.interpreter = tflite.Interpreter(model_path = "model/gesture_model.tflite")
+        self.interpreter.allocate_tensors()
+        self.input_details = self.interpreter.get_input_details()
+        self.output_details = self.interpreter.get_output_details()
+        self.GESTURE_LABELS = self.load_gesture_labels()
+        print("Gesture model reloaded")

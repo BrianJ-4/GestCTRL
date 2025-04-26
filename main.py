@@ -12,7 +12,7 @@ def main():
     print("Gesture controller started. Press Ctrl+C to exit.")
 
     root = tk.Tk()
-    app = GestureApp(root)
+    app = GestureApp(root, gesture_controller)
 
     def on_close():
         gesture_controller.stop()
