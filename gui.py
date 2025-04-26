@@ -3,6 +3,11 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from PIL import ImageTk, Image
+import sv_ttk
+import threading
+
+from model_trainer import train_model
+from pose_action_manager import PoseActionManager
 
 class GestureApp:
     def __init__(self, root):
@@ -11,13 +16,9 @@ class GestureApp:
         self.set_geometry(self.root, 900, 600)
         self.root.resizable(False, False)
         self.root.config(bg="#3b3b3b")
-        self.logo = ImageTk.PhotoImage(Image.open('assets/icons/logo_nobg1.png').resize((300, 100)))
+        self.pose_action_manager = PoseActionManager()
+        sv_ttk.set_theme("dark")
         self.start_ui()
-
-        self.cap = cv2.VideoCapture(0)
-        if not self.cap.isOpened():
-            raise RuntimeError("Webcam unable to open")
-        self.camera_preview()
 
     def set_geometry(self, parent, width, height):
         screen_width = parent.winfo_screenwidth()
@@ -31,8 +32,6 @@ class GestureApp:
         self.pose_frame = tk.Frame(self.root, bg="#636363", width=300, height=300)
         self.pose_frame.pack(side="left", fill="both", padx = 5, pady = 5)
         self.pose_frame.pack_propagate(False)
-        self.logo_label = tk.Label(self.pose_frame, image=self.logo, bg="#636363")
-        self.logo_label.pack()
         cols = ("pose", "action")
         self.pose_tree = ttk.Treeview(self.pose_frame, columns= cols, show="headings")
         self.pose_tree.column("pose", anchor="center", width=100)
@@ -49,16 +48,18 @@ class GestureApp:
         self.preview_label.pack(fill="both", expand=True)
 
         #Add Pose Button
-        self.pose_button = ttk.Button(self.pose_frame, text="Add Pose")
-        self.pose_button.pack(pady=10)
+        self.add_pose_button = ttk.Button(self.pose_frame, text="Add Pose")
+        self.add_pose_button.pack(pady=10)
 
         #Train Button
-        self.pose_button = ttk.Button(self.pose_frame, text="Train")
-        self.pose_button.pack(pady=10)
+        self.train_button = ttk.Button(self.pose_frame, text="Train", style="Accent.TButton", command = self.train_model_clicked )
+        self.train_button.pack(pady=10)
 
         #Settings Button
-        self.pose_button = ttk.Button(self.pose_frame, text="Settings", command=self.settings_ui)
-        self.pose_button.pack(pady=10)
+        self.settings_button = ttk.Button(self.pose_frame, text="Settings", command=self.settings_ui)
+        self.settings_button.pack(pady=10)
+
+        self.updateList()
 
     def settings_ui(self):
         self.settings_window = Toplevel(self.root)
@@ -67,24 +68,18 @@ class GestureApp:
         self.settings_window.resizable(False, False)
         self.settings_window.config(bg="#3b3b3b")
 
-    def camera_preview(self):
-            success, image = self.cap.read()
-            if not success:
-                return
-            rgb = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-            width = self.preview_frame.winfo_width()
-            height = self.preview_frame.winfo_height()
-            results = rgb.resize((width, height))
-            self.live_camera = ImageTk.PhotoImage(results)
-            self.preview_label.config(image=self.live_camera)
-            self.root.after(15, self.camera_preview)
-        
-    def close(self):
-        if self.cap.isOpened():
-            self.cap.release()
+    def train_model_clicked(self):
+        def train_thread():
+            self.train_button.config(state = "disabled", text = "Training...")
+            print("Training started")
+            train_model()
+            self.train_button.config(state = "normal", text = "Train")
+            print("Training complete")
+        threading.Thread(target = train_thread, daemon = True).start()
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = GestureApp(root)
-    root.mainloop()
-    app.close()
+    # Update the tree view with pose and action mappings
+    def updateList(self):
+        self.pose_tree.delete(*self.pose_tree.get_children())
+        mappings = self.pose_action_manager.get_mappings()
+        for pose, action in mappings.items():
+            self.pose_tree.insert("", "end", values = (pose, action))
