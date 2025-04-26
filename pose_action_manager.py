@@ -34,6 +34,7 @@ class PoseActionManager():
         self.save_mappings()
 
     def get_mappings(self):
+        self.mappings = self.load_mappings()
         return self.mappings
     
     def add_pose(self, pose):
