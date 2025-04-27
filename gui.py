@@ -150,8 +150,3 @@ class GestureApp:
             return
         self.gesture_manager.add_pose(recorded_pose)
         self.updateListPoses()     
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = GestureApp(root)
-    root.mainloop()
