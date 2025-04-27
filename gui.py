@@ -10,6 +10,7 @@ import threading
 from gesture_manager import GestureManager
 from model_trainer import train_model
 from pose_action_manager import PoseActionManager
+from pose_recorder import GestureRecorder
 
 class GestureApp:
     def __init__(self, root):
@@ -18,8 +19,9 @@ class GestureApp:
         self.set_geometry(self.root, 900, 600)
         self.root.resizable(False, False)
         self.root.config(bg="#3b3b3b")
-        self.pose_action_manager = PoseActionManager()
         self.gesture_manager = GestureManager()
+        self.pose_action_manager = PoseActionManager()
+        self.pose_recorder = GestureRecorder
         sv_ttk.set_theme("dark")
         self.start_ui()
 
@@ -36,14 +38,19 @@ class GestureApp:
         self.pose_frame.pack(side="right", fill="both", padx = 5, pady = 5)
         self.pose_frame.pack_propagate(False)
         cols = ("pose", "action")
-        self.pose_tree = ttk.Treeview(self.pose_frame, columns= cols, show="headings")
+        self.pose_tree_frame = tk.Frame(self.pose_frame, bg="#636363")
+        self.pose_tree_frame.pack(fill="both", expand="True")
+        self.pose_tree = ttk.Treeview(self.pose_tree_frame, columns= cols, show="headings")
         self.pose_tree.column("pose", anchor="center", width=100)
         self.pose_tree.heading("pose", text="Pose")
         self.pose_tree.column("action", anchor="center", width=100)
         self.pose_tree.heading("action", text="Action")
-        self.pose_tree.pack(fill="both", expand=True)
+        self.pose_tree.pack(side="left", fill="both", expand=True)
         self.button_row_frame = tk.Frame(self.pose_frame, bg="#636363")
         self.button_row_frame.pack(fill="both", pady=10)
+        self.pose_tree_scrollbar = ttk.Scrollbar(self.pose_tree_frame, orient="vertical", command=self.pose_tree.yview)
+        self.pose_tree.configure(yscrollcommand = self.pose_tree_scrollbar.set)
+        self.pose_tree_scrollbar.pack(side="right", fill="y")
 
         #Preview Frame (Here as an example)
         self.preview_frame = ttk.Frame(self.root, width=650, height=450)
@@ -142,8 +149,7 @@ class GestureApp:
             messagebox.showwarning("showwarning", "Please Enter a Name", parent=self.add_pose_window)
             return
         self.gesture_manager.add_pose(recorded_pose)
-        self.updateListPoses()
-            
+        self.updateListPoses()     
 
 if __name__ == "__main__":
     root = tk.Tk()
