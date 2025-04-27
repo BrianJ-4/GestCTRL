@@ -42,4 +42,4 @@ class GestureManager:
                     file.write(pose + "\n")
 
         # Remove pose from mappings.json
-        self.pose_action_manager.delete_pose()
+        self.pose_action_manager.delete_pose(pose_name)

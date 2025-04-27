@@ -29,3 +29,6 @@ class ActionController:
 
     def zoom_out(self):
         pyautogui.hotkey("ctrl", "-")
+
+    def get_actions(self):
+        return list(self.actions.keys())

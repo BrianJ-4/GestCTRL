@@ -11,18 +11,34 @@ from gesture_manager import GestureManager
 from model_trainer import train_model
 from pose_action_manager import PoseActionManager
 from pose_recorder import GestureRecorder
+from action_controller import ActionController
 
 class GestureApp:
-    def __init__(self, root):
+    def __init__(self, root, gesture_controller):
+        # Window setup
         self.root = root
         self.root.title("GestCTRL")
         self.set_geometry(self.root, 900, 600)
         self.root.resizable(False, False)
         self.root.config(bg="#3b3b3b")
-        self.gesture_manager = GestureManager()
+
+        # Create objects to interact with backend data
         self.pose_action_manager = PoseActionManager()
+        self.action_controller = ActionController()
+        self.gesture_manager = GestureManager()
+        self.gesture_controller = gesture_controller
         self.pose_recorder = GestureRecorder
+
+        # Set theme
         sv_ttk.set_theme("dark")
+
+        # Load icons
+        self.save_icon = tk.PhotoImage(file = './assets/icons/save.png')
+        self.delete_icon = tk.PhotoImage(file = './assets/icons/delete.png')
+
+        # Used to track when the model should be retrained based on user adding/deleting poses
+        self.changed = False
+
         self.start_ui()
 
     def set_geometry(self, parent, width, height):
@@ -51,6 +67,7 @@ class GestureApp:
         self.pose_tree_scrollbar = ttk.Scrollbar(self.pose_tree_frame, orient="vertical", command=self.pose_tree.yview)
         self.pose_tree.configure(yscrollcommand = self.pose_tree_scrollbar.set)
         self.pose_tree_scrollbar.pack(side="right", fill="y")
+        self.pose_tree.bind("<Double-1>", self.open_pose_menu)
 
         #Preview Frame (Here as an example)
         self.preview_frame = ttk.Frame(self.root, width=650, height=450)
@@ -64,7 +81,7 @@ class GestureApp:
         self.add_pose_button.pack(side="left", padx=(50, 10))
 
         #Train Button
-        self.train_button = ttk.Button(self.button_row_frame, text="Train", style="Accent.TButton", command = self.train_model_clicked )
+        self.train_button = ttk.Button(self.button_row_frame, text="Train", style="Accent.TButton", state = "disabled", command = self.train_model_clicked )
         self.train_button.pack(side="right", padx=(10, 60))
 
         #Settings Button
@@ -85,9 +102,18 @@ class GestureApp:
             self.train_button.config(state = "disabled", text = "Training...")
             print("Training started")
             train_model()
+            self.gesture_controller.reload_model()
             self.train_button.config(state = "normal", text = "Train")
+            self.changed = False
+            self.update_train_button()
             print("Training complete")
         threading.Thread(target = train_thread, daemon = True).start()
+
+    def update_train_button(self):
+        if self.changed:
+            self.train_button.config(state = "enabled", text = "Train")
+        else:
+            self.train_button.config(state = "disabled", text = "Train")
 
     # Update the tree view with pose and action mappings
     def updateList(self):
@@ -150,3 +176,56 @@ class GestureApp:
             return
         self.gesture_manager.add_pose(recorded_pose)
         self.updateListPoses()     
+        
+    def open_pose_menu(self, event):
+        selected_item = self.pose_tree.focus()
+        pose, action = self.pose_tree.item(selected_item, "values")
+
+        menu = Toplevel(self.root)
+        menu.title(f"Edit Pose: {pose}")
+        self.set_geometry(menu, 400, 250)
+        menu.resizable(False, False)
+        menu.config(bg = "#3b3b3b")
+
+        # Pose name label
+        pose_label = ttk.Label(menu, text = pose, font = ("Arial", 14), background = "#3b3b3b")
+        pose_label.pack(pady = 20)
+
+        # Dropdown for actions
+        actions = self.action_controller.get_actions() + ["Right Click", "Left Click", "Mouse Mode", "Neutral"]
+        action = tk.StringVar(value = action)
+        action_dropdown = ttk.Combobox(menu, textvariable = action, values = actions, state = "readonly")
+        action_dropdown.pack(pady = 10)
+
+        # Save Button
+        save_button = ttk.Button(
+            menu,
+            image = self.save_icon,
+            text = "Save Mapping",
+            compound = tk.LEFT,
+            command = lambda: self.save_action(pose, action.get(), menu),
+            style = "Accent.TButton"
+        )
+        save_button.pack(pady = 10)
+
+        # Delete Button
+        delete_button = ttk.Button(
+            menu,
+            image = self.delete_icon,
+            text = "Delete Pose",
+            compound = tk.LEFT,
+            command=lambda: self.delete_pose(pose, menu)
+        )
+        delete_button.pack(pady = 10)
+
+    def save_action(self, pose, action, window):
+        self.pose_action_manager.set_pose_action(pose, action)
+        self.updateList()
+        window.destroy()
+
+    def delete_pose(self, pose, window):
+        self.gesture_manager.delete_pose(pose)
+        self.updateList()
+        self.changed = True
+        self.update_train_button()
+        window.destroy()
