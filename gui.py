@@ -102,7 +102,7 @@ class GestureApp:
             self.train_button.config(state = "disabled", text = "Training...")
             print("Training started")
             train_model()
-            self.gesture_controller.reload_model()
+            self.gesture_controller.reload_model() # Reload to use the newly trained model
             self.train_button.config(state = "normal", text = "Train")
             self.changed = False
             self.update_train_button()
@@ -174,7 +174,10 @@ class GestureApp:
         if not recorded_pose or recorded_pose == "Insert Pose Name":
             messagebox.showwarning("showwarning", "Please Enter a Name", parent=self.add_pose_window)
             return
-        self.gesture_manager.add_pose(recorded_pose)
+        # self.gesture_manager.add_pose(recorded_pose) 
+        # Commented out because of crashing
+        # Should use recorder.start_recording(recorded_pose) and implement logic further
+        # Maybe also rename recorded_pose to be new_pose or something
         self.updateListPoses()     
         
     def open_pose_menu(self, event):
