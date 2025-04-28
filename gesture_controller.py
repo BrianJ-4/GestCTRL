@@ -65,6 +65,7 @@ class GestureController:
         self.mouse_held = None
         self.pose_action_manager = PoseActionManager()
         self.action_controller = ActionController()
+        self.prev_pose_name = ""
 
     def process_landmarks(self, hand_landmarks, handedness):
         landmarks = []
@@ -167,8 +168,9 @@ class GestureController:
                             pyautogui.mouseUp(button = 'right')
                             self.mouse_held = None
                     
-                    elif action != "":
+                    elif action != "" and self.prev_pose_name != pose_name:
                         self.action_controller.perform_action(action)
+                        self.prev_pose_name = pose_name
 
     def stop(self):
         self.running = False
