@@ -143,7 +143,7 @@ class GestureApp:
         self.add_pose_right_frame = tk.Frame(self.add_pose_window, bg="#636363", width=300, height=300)
         self.add_pose_right_frame.pack(side="right", fill="both", padx = 5, pady = 5)
         self.add_pose_right_frame.pack_propagate(False)
-        col = ("pose")
+        col = ("pose",)
         self.add_pose_tree = ttk.Treeview(self.add_pose_right_frame, columns= col, show="headings")
         self.add_pose_tree.column("pose", anchor="center", width=100)
         self.add_pose_tree.heading("pose", text="Pose")
@@ -168,7 +168,7 @@ class GestureApp:
         self.add_pose_tree.delete(*self.add_pose_tree.get_children())
         poses = self.gesture_manager.get_all_poses()
         for pose in poses:
-            self.add_pose_tree.insert("", "end", values = pose)
+            self.add_pose_tree.insert("", "end", values = (pose,))
     
     def entryFieldPlaceholder(self, event):
         if self.add_pose_entry.get() == "Insert Pose Name":
@@ -273,7 +273,6 @@ class GestureApp:
         frame = self.camera_manager.get_frame()
         if frame is not None:
             frame = frame.copy()
-            #frame = cv2.flip(frame, 1)
 
             hands = self.gesture_controller.hands
             results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
