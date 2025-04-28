@@ -19,9 +19,8 @@ class GestureApp:
         # Window setup
         self.root = root
         self.root.title("GestCTRL")
-        self.set_geometry(self.root, 900, 600)
+        self.set_geometry(self.root, 900, 550)
         self.root.resizable(False, False)
-        self.root.config(bg="#3b3b3b")
 
         # Create objects to interact with backend data
         self.pose_action_manager = PoseActionManager()
@@ -36,9 +35,15 @@ class GestureApp:
         # Load icons
         self.save_icon = tk.PhotoImage(file = './assets/icons/save.png')
         self.delete_icon = tk.PhotoImage(file = './assets/icons/delete.png')
+        self.add_icon = tk.PhotoImage(file = './assets/icons/add.png')
+        self.train_icon = tk.PhotoImage(file = './assets/icons/train.png')
+        self.train_icon_white = tk.PhotoImage(file = './assets/icons/train_white.png')
+        self.settings_icon = tk.PhotoImage(file = './assets/icons/settings.png')
 
         # Used to track when the model should be retrained based on user adding/deleting poses
         self.changed = False
+
+        self.train_button_disabled = True
 
         self.start_ui()
 
@@ -50,44 +55,70 @@ class GestureApp:
         parent.geometry(f"{width}x{height}+{x}+{y}")
 
     def start_ui(self):
-        #Pose List and Thumbnail
-        self.pose_frame = tk.Frame(self.root, bg="#636363", width=300, height=300)
-        self.pose_frame.pack(side="right", fill="both", padx = 5, pady = 5)
+        # Pose List and Thumbnail
+        self.pose_frame = tk.Frame(self.root, width=300, height=300)
+        self.pose_frame.pack(side="right", fill="y", padx=5, pady=5)
         self.pose_frame.pack_propagate(False)
+
         cols = ("pose", "action")
-        self.pose_tree_frame = tk.Frame(self.pose_frame, bg="#636363")
-        self.pose_tree_frame.pack(fill="both", expand="True")
-        self.pose_tree = ttk.Treeview(self.pose_tree_frame, columns= cols, show="headings")
+
+        # Outer frame
+        self.pose_tree_frame = tk.Frame(self.pose_frame, height=400)
+        self.pose_tree_frame.pack(fill="x", pady=(5, 0))
+        self.pose_tree_frame.pack_propagate(False)
+
+        # Inner frame to separate treeview and scrollbar
+        self.pose_tree_inner_frame = tk.Frame(self.pose_tree_frame, bg="#636363")
+        self.pose_tree_inner_frame.pack(fill = "both", expand = "true")
+
+        self.pose_tree = ttk.Treeview(self.pose_tree_inner_frame, columns=cols, show="headings")
         self.pose_tree.column("pose", anchor="center", width=100)
         self.pose_tree.heading("pose", text="Pose")
         self.pose_tree.column("action", anchor="center", width=100)
         self.pose_tree.heading("action", text="Action")
         self.pose_tree.pack(side="left", fill="both", expand=True)
-        self.button_row_frame = tk.Frame(self.pose_frame, bg="#636363")
-        self.button_row_frame.pack(fill="both", pady=10)
-        self.pose_tree_scrollbar = ttk.Scrollbar(self.pose_tree_frame, orient="vertical", command=self.pose_tree.yview)
-        self.pose_tree.configure(yscrollcommand = self.pose_tree_scrollbar.set)
-        self.pose_tree_scrollbar.pack(side="right", fill="y")
+
+        self.pose_tree_scrollbar = ttk.Scrollbar(self.pose_tree_inner_frame, orient="vertical", command=self.pose_tree.yview)
+        self.pose_tree.configure(yscrollcommand=self.pose_tree_scrollbar.set)
+        self.pose_tree_scrollbar.pack(side="left", fill="y")
+
         self.pose_tree.bind("<Double-1>", self.open_pose_menu)
 
+        # Add pose button
+        self.add_pose_button = ttk.Button(
+            self.root,
+            image=self.add_icon,
+            text="Add Pose",
+            compound=tk.LEFT,
+            command=self.add_pose_ui
+        )
+        self.add_pose_button.place(x = 595, y = 420, width = 135, height = 40)
+
+        # Train button
+        self.train_button = ttk.Button(
+            self.root,
+            image=self.train_icon_white,
+            text="Train",
+            compound=tk.LEFT,
+            command=self.train_model_clicked
+        )
+        self.train_button.place(x = 735, y = 420, width = 135, height = 40)
+
+        # Settings button
+        self.settings_button = ttk.Button(
+            self.root,
+            image = self.settings_icon,
+            command=self.settings_ui
+        )
+        self.settings_button.place(x = 840, y = 500)
+        
         # Preview Frame
         self.preview_frame = ttk.Frame(self.root, width=650, height=450)
         self.preview_frame.pack_propagate(False)
         self.preview_frame.pack(side="left", anchor="n", padx=10, pady=10)
+
         self.preview_label = tk.Label(self.preview_frame, bg="black")
         self.preview_label.pack(fill="both", expand=True)
-
-        #Add Pose Button
-        self.add_pose_button = ttk.Button(self.button_row_frame, text="Add Pose", command=self.add_pose_ui)
-        self.add_pose_button.pack(side="left", padx=(50, 10))
-
-        #Train Button
-        self.train_button = ttk.Button(self.button_row_frame, text="Train", style="Accent.TButton", state = "disabled", command = self.train_model_clicked )
-        self.train_button.pack(side="right", padx=(10, 60))
-
-        #Settings Button
-        self.settings_button = ttk.Button(self.pose_frame, text="Settings", command=self.settings_ui)
-        self.settings_button.pack(pady=10)
 
         self.updateList()
         self.root.after_idle(self.start_camera_loop)
@@ -100,12 +131,15 @@ class GestureApp:
             self.settings_window.config(bg="#3b3b3b")
 
     def train_model_clicked(self):
+        if self.train_button_disabled:
+            return 
         def train_thread():
-            self.train_button.config(state = "disabled", text = "Training...")
+            self.train_button.config(text = "Training...", image = self.train_icon)
             print("Training started")
             train_model()
             self.gesture_controller.reload_model() # Reload to use the newly trained model
-            self.train_button.config(state = "normal", text = "Train")
+            self.train_button.config(text = "Train")
+            self.train_button_disabled = True
             self.changed = False
             self.update_train_button()
             print("Training complete")
@@ -113,9 +147,11 @@ class GestureApp:
 
     def update_train_button(self):
         if self.changed:
-            self.train_button.config(state = "enabled", text = "Train")
+            self.train_button_disabled = False
+            self.train_button.config(text = "Train", image = self.train_icon, style = "Accent.TButton")
         else:
-            self.train_button.config(state = "disabled", text = "Train")
+            self.train_button_disabled = True
+            self.train_button.config(text = "Train", image = self.train_icon_white, style = "")
 
     # Update the tree view with pose and action mappings
     def updateList(self):
@@ -130,7 +166,6 @@ class GestureApp:
         self.add_pose_window.title("Add Pose")
         self.set_geometry(self.add_pose_window, 900, 600)
         self.add_pose_window.resizable(False, False)
-        self.add_pose_window.config(bg="#3b3b3b")
 
         #Preview Frame
         self.add_pose_left_frame = ttk.Frame(self.add_pose_window, width=650, height=500)
@@ -140,7 +175,7 @@ class GestureApp:
         self.add_pose_preview_label.pack(fill="both", expand=True)
 
         #Pose List and Add Name
-        self.add_pose_right_frame = tk.Frame(self.add_pose_window, bg="#636363", width=300, height=300)
+        self.add_pose_right_frame = tk.Frame(self.add_pose_window, width=300, height=300)
         self.add_pose_right_frame.pack(side="right", fill="both", padx = 5, pady = 5)
         self.add_pose_right_frame.pack_propagate(False)
         col = ("pose")
@@ -180,7 +215,7 @@ class GestureApp:
         if not new_pose or new_pose == "Insert Pose Name":
             messagebox.showwarning("Warning", "Please Enter a Name", parent=self.add_pose_window)
             return
-
+        
         self.add_pose_record_button.config(state="disabled", text="Recording...")
         self.pose_recorder = GestureRecorder(self.camera_manager)
         self.pose_recorder.start_recording(new_pose)
@@ -273,7 +308,6 @@ class GestureApp:
         frame = self.camera_manager.get_frame()
         if frame is not None:
             frame = frame.copy()
-            #frame = cv2.flip(frame, 1)
 
             hands = self.gesture_controller.hands
             results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
