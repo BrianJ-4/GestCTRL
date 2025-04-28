@@ -6,6 +6,8 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 import sv_ttk
 import threading
+import time
+import keyboard
 
 from gesture_manager import GestureManager
 from model_trainer import train_model
@@ -27,7 +29,7 @@ class GestureApp:
         self.action_controller = ActionController()
         self.gesture_manager = GestureManager()
         self.gesture_controller = gesture_controller
-        self.pose_recorder = GestureRecorder
+        self.pose_recorder = GestureRecorder()
 
         # Set theme
         sv_ttk.set_theme("dark")
@@ -170,16 +172,39 @@ class GestureApp:
             self.add_pose_entry.config(fg="#FFFFFF")
 
     def record_button_clicked(self):
-        recorded_pose = self.add_pose_name.get().strip()
-        if not recorded_pose or recorded_pose == "Insert Pose Name":
-            messagebox.showwarning("showwarning", "Please Enter a Name", parent=self.add_pose_window)
+        new_pose = self.add_pose_name.get().strip()
+        if not new_pose or new_pose == "Insert Pose Name":
+            messagebox.showwarning("Warning", "Please Enter a Name", parent=self.add_pose_window)
             return
-        # self.gesture_manager.add_pose(recorded_pose) 
-        # Commented out because of crashing
-        # Should use recorder.start_recording(recorded_pose) and implement logic further
-        # Maybe also rename recorded_pose to be new_pose or something
-        self.updateListPoses()     
         
+        self.add_pose_record_button.config(state="disabled", text="Recording...")
+        self.pose_recorder.start_recording(new_pose)
+        #Problems with the add pose button not being able to be pressed twice, might have to do with how I use the threading aspect (Will fix when I get back)
+        threading.Thread(target=self.pose_recorder.run, daemon=True).start()
+        try:
+            while self.pose_recorder.running:
+                if keyboard.is_pressed('enter'):
+                    self.pose_recorder.record_frame()
+                    print("Frame saved.")
+                    time.sleep(0.2)
+                elif keyboard.is_pressed('esc'):
+                    self.pose_recorder.stop_recording()
+                    break
+                time.sleep(0.05)
+        except KeyboardInterrupt:
+            self.pose_recorder.stop()
+        finally:
+            self.add_pose_window.after(500, lambda: self.recording_finished())
+        
+    def recording_finished(self):
+        self.pose_recorder.stop()
+
+        #Changing Button Back
+        self.add_pose_record_button.config(state="normal", text="Record Pose")    
+        self.changed = True
+        self.update_train_button()
+        self.updateListPoses
+
     def open_pose_menu(self, event):
         selected_item = self.pose_tree.focus()
         pose, action = self.pose_tree.item(selected_item, "values")
