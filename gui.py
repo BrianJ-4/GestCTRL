@@ -437,6 +437,7 @@ class GestureApp:
         message = (
             "Adding a New Pose:\n\n"
             "- Type a name for your new pose\n"
+            "- Or type the name of an existing pose\n"
             "- Click 'Record Pose' to start capturing samples\n"
             "- Press ENTER to record a frame\n"
             "- Press ESC to finish recording\n"
