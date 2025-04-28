@@ -43,9 +43,10 @@ class CursorMovementThread(threading.Thread):
         self.running = False
 
 class GestureController:
-    def __init__(self):
+    def __init__(self, camera_manager):
         self.running = False
-        self.cap = cv2.VideoCapture(0)
+        self.paused = False
+        self.camera_manager = camera_manager
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             max_num_hands = 1,
@@ -66,14 +67,18 @@ class GestureController:
         self.action_controller = ActionController()
         self.prev_pose_name = ""
 
-    def process_landmarks(self, hand_landmarks):
+    def process_landmarks(self, hand_landmarks, handedness):
         landmarks = []
 
         # Extract x and y coordinates of each landmark normalized to wrist position
         for landmark in hand_landmarks.landmark:
             xCoordinate = landmark.x - hand_landmarks.landmark[0].x 
             yCoordinate = landmark.y - hand_landmarks.landmark[0].y
-            landmarks.append([xCoordinate, yCoordinate])
+
+            if handedness == 'Left':
+                landmarks.append([xCoordinate, yCoordinate])
+            elif handedness == 'Right':
+                landmarks.append([-xCoordinate, yCoordinate])
 
         # Flatten landmarks into 1D list
         flattened_landmarks = np.array(landmarks).flatten().tolist()
@@ -97,90 +102,90 @@ class GestureController:
     def run(self):
         self.running = True
         self.movement_thread.start()
-        try:
-            while self.cap.isOpened() and self.running:
-                success, image = self.cap.read()
-                if not success:
-                    continue
+        while self.running:
+            if self.paused:
+                time.sleep(.05)
+                continue
 
-                rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                rgb.flags.writeable = False
-                results = self.hands.process(rgb)
-                rgb.flags.writeable = True
+            frame = self.camera_manager.get_frame()
+            if frame is None:
+                continue
 
-                flipped_image = cv2.flip(image, 1)
-                pose_name = "No Hand"
-                confidence = None
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb.flags.writeable = False
+            results = self.hands.process(rgb)
+            rgb.flags.writeable = True
 
-                if results.multi_hand_landmarks:
-                    hand_landmarks = results.multi_hand_landmarks[0]
-                    mp.solutions.drawing_utils.draw_landmarks(
-                        flipped_image, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
+            pose_name = "No Hand"
+            confidence = None
 
-                    input_tensor = self.process_landmarks(hand_landmarks)
-                    self.interpreter.set_tensor(self.input_details[0]['index'], input_tensor)
-                    self.interpreter.invoke()
-                    predictions = self.interpreter.get_tensor(self.output_details[0]['index'])[0]
+            if results.multi_hand_landmarks:
+                hand_landmarks = results.multi_hand_landmarks[0]
+                handedness = results.multi_handedness[0].classification[0].label
+                input_tensor = self.process_landmarks(hand_landmarks, handedness)
+                self.interpreter.set_tensor(self.input_details[0]['index'], input_tensor)
+                self.interpreter.invoke()
+                predictions = self.interpreter.get_tensor(self.output_details[0]['index'])[0]
 
-                    best_idx = np.argmax(predictions)
-                    confidence = predictions[best_idx]
+                best_idx = np.argmax(predictions)
+                confidence = predictions[best_idx]
 
-                    if confidence > 0.90:
-                        pose_name = self.GESTURE_LABELS[best_idx]
-                    else:
-                        pose_name = "Unknown"
+                if confidence > 0.90:
+                    pose_name = self.GESTURE_LABELS[best_idx]
+                else:
+                    pose_name = "Unknown"
+                
+                if pose_name != "Unknown":
+                    action = self.pose_action_manager.get_pose_action(pose_name)
+                    if action in ["Mouse Mode", "Left Click", "Right Click"]:
+                        self.mouse_mode = True
+                        self.movement_thread.activate()
+                        cursor_point = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+                        finger_x = (1 - cursor_point.x) * self.screen_width
+                        finger_y = cursor_point.y * self.screen_height
+                        self.movement_thread.update_target(finger_x, finger_y)
 
-                    if pose_name != "Unknown":
-                        action = self.pose_action_manager.get_pose_action(pose_name)
-                        if action in ["Mouse Mode", "Left Click", "Right Click"]:
-                            self.mouse_mode = True
-                            self.movement_thread.activate()
-                            cursor_point = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
-                            finger_x = (1 - cursor_point.x) * self.screen_width
-                            finger_y = cursor_point.y * self.screen_height
-                            self.movement_thread.update_target(finger_x, finger_y)
-
-                            if action == "Left Click" and self.mouse_held != "left":
-                                pyautogui.mouseDown()
-                                self.mouse_held = "left"
-                            elif action == "Right Click" and self.mouse_held != "right":
-                                pyautogui.mouseDown(button = 'right')
-                                self.mouse_held = "right"
-                            elif action == "Mouse Mode":
-                                # Allow movement, but no clicking
-                                if self.mouse_held == "left":
-                                    pyautogui.mouseUp()
-                                    self.mouse_held = None
-                                elif self.mouse_held == "right":
-                                    pyautogui.mouseUp(button = 'right')
-                                    self.mouse_held = None
-
-                        elif action == "Neutral":
-                            self.movement_thread.deactivate()
-                            self.mouse_mode = False
-                            if self.mouse_held:
+                        if action == "Left Click" and self.mouse_held != "left":
+                            pyautogui.mouseDown()
+                            self.mouse_held = "left"
+                        elif action == "Right Click" and self.mouse_held != "right":
+                            pyautogui.mouseDown(button = 'right')
+                            self.mouse_held = "right"
+                        elif action == "Mouse Mode":
+                            # Allow movement, but no clicking
+                            if self.mouse_held == "left":
                                 pyautogui.mouseUp()
+                                self.mouse_held = None
+                            elif self.mouse_held == "right":
                                 pyautogui.mouseUp(button = 'right')
                                 self.mouse_held = None
-                        
-                        elif action != "" and self.prev_pose_name != pose_name:
-                            self.action_controller.perform_action(action)
-                            self.prev_pose_name = pose_name
-                            # Need to add another action pose and test
 
-
-                cv2.putText(flipped_image, pose_name, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                if confidence:
-                    cv2.putText(flipped_image, f"{confidence:.2f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                cv2.imshow('Hand Gesture Control', flipped_image)
-
-                if cv2.waitKey(5) & 0xFF == 27:
-                    self.stop()
-                    break
-        finally:
-            self.cap.release()
-            cv2.destroyAllWindows()
+                    elif action == "Neutral":
+                        self.movement_thread.deactivate()
+                        self.mouse_mode = False
+                        if self.mouse_held:
+                            pyautogui.mouseUp()
+                            pyautogui.mouseUp(button = 'right')
+                            self.mouse_held = None
+                    
+                    elif action != "" and self.prev_pose_name != pose_name:
+                        self.action_controller.perform_action(action)
+                        self.prev_pose_name = pose_name
 
     def stop(self):
         self.running = False
         self.movement_thread.stop()
+
+    def pause(self):
+        self.paused = True
+
+    def unpause(self):
+        self.paused = False
+
+    def reload_model(self):
+        self.interpreter = tflite.Interpreter(model_path = "model/gesture_model.tflite")
+        self.interpreter.allocate_tensors()
+        self.input_details = self.interpreter.get_input_details()
+        self.output_details = self.interpreter.get_output_details()
+        self.GESTURE_LABELS = self.load_gesture_labels()
+        print("Gesture model reloaded")

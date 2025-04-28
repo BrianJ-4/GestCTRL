@@ -4,7 +4,7 @@ import numpy as np
 from gesture_manager import GestureManager
 
 class GestureRecorder:
-    def __init__(self):
+    def __init__(self, camera_manager):
         self.mp_hands = mp.solutions.hands
         self.mp_drawing = mp.solutions.drawing_utils
         self.hands = self.mp_hands.Hands(
@@ -13,11 +13,11 @@ class GestureRecorder:
             min_detection_confidence = 0.5,
             min_tracking_confidence = 0.5
         )
-        self.cap = cv2.VideoCapture(0) # Might need to add logic to this to allow user to select webcam
         self.running = False
         self.reading = False
         self.pose_name = None
         self.gesture_manager = GestureManager()
+        self.camera_manager = camera_manager
         self.current_landmarks = None
 
     def start_recording(self, pose_name):
@@ -35,41 +35,28 @@ class GestureRecorder:
     
     def run(self):
         self.running = True
-        while self.running and self.cap.isOpened():
-            success, image = self.cap.read()
-            if not success:
-                print("Ignoring empty camera frame.")
+        while self.running:
+            frame = self.camera_manager.get_frame()
+            if frame is None:
                 continue
             
-            # Convert image to RGB (for MediaPipe)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image.flags.writeable = False
-            results = self.hands.process(image)
-            image.flags.writeable = True
+            # Convert frame to RGB (for MediaPipe)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame.flags.writeable = False
+            results = self.hands.process(frame)
+            frame.flags.writeable = True
 
             # Convert back to BGR for OpenCV display
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
                     self.current_landmarks = hand_landmarks
-                    self.mp_drawing.draw_landmarks(
-                        image, hand_landmarks, self.mp_hands.HAND_CONNECTIONS
-                    )
             else:
                 self.current_landmarks = None
-
-            # Flip image for mirror view
-            cv2.imshow('Pose Recorder', cv2.flip(image, 1))
-            key = cv2.waitKey(5)
-            if key == 27:
-                self.stop()
-                break
     
     def stop(self):
         self.running = False
         self.reading = False
-        self.cap.release()
-        cv2.destroyAllWindows()
 
     def process_landmarks(self, hand_landmarks):
         landmarks = []
