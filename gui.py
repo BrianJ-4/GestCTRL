@@ -15,7 +15,7 @@ from pose_recorder import GestureRecorder
 from action_controller import ActionController
 
 class GestureApp:
-    def __init__(self, root, gesture_controller, camera_manager):
+    def __init__(self, root, gesture_controller, camera_manager, settings_manager, camera_error = None):
         # Window setup
         self.root = root
         self.root.title("GestCTRL")
@@ -28,6 +28,8 @@ class GestureApp:
         self.gesture_manager = GestureManager()
         self.gesture_controller = gesture_controller
         self.camera_manager = camera_manager
+        self.camera_error = camera_error
+        self.settings_manager = settings_manager
 
         # Set theme
         sv_ttk.set_theme("dark")
@@ -46,6 +48,10 @@ class GestureApp:
         self.train_button_disabled = True
 
         self.start_ui()
+        if self.camera_error:
+            self.show_camera_error()
+        if self.settings_manager.display_help == True:
+            self.show_main_help_popup()
 
     def set_geometry(self, parent, width, height):
         screen_width = parent.winfo_screenwidth()
@@ -124,11 +130,35 @@ class GestureApp:
         self.root.after_idle(self.start_camera_loop)
 
     def settings_ui(self):
-            self.settings_window = Toplevel(self.root)
-            self.settings_window.title("Settings")
-            self.set_geometry(self.settings_window, 900, 600)
-            self.settings_window.resizable(False, False)
-            self.settings_window.config(bg="#3b3b3b")
+        self.settings_window = Toplevel(self.root)
+        self.settings_window.title("Settings")
+        self.set_geometry(self.settings_window, 400, 300)
+        self.settings_window.resizable(False, False)
+
+        webcam_index = self.settings_manager.get_webcam_index_setting()
+        display_help = self.settings_manager.get_display_help_setting()
+
+        tk.Label(self.settings_window, text="Webcam Index:").pack(pady=(10, 0))
+        self.webcam_index_var = tk.StringVar(value=str(webcam_index))
+        self.webcam_index_entry = ttk.Entry(self.settings_window, textvariable=self.webcam_index_var, justify="center")
+        self.webcam_index_entry.pack(pady=5)
+
+        # Display Help Checkbox
+        self.display_help_var = tk.BooleanVar(value=display_help)
+        self.display_help_checkbox = ttk.Checkbutton(
+            self.settings_window,
+            text="Display Help Messages",
+            variable=self.display_help_var
+        )
+        self.display_help_checkbox.pack(pady=10)
+
+        # Save Settings Button
+        save_button = ttk.Button(self.settings_window, text="Save Settings", command=self.save_settings)
+        save_button.pack(pady=10)
+
+        # Restore Defaults Button
+        restore_button = ttk.Button(self.settings_window, text="Restore Defaults", command=self.restore_defaults)
+        restore_button.pack(pady=5)
 
     def train_model_clicked(self):
         if self.train_button_disabled:
@@ -195,6 +225,9 @@ class GestureApp:
         #Add Pose Button
         self.add_pose_record_button = ttk.Button(self.add_pose_right_frame, text="Record Pose", command=self.record_button_clicked)
         self.add_pose_record_button.pack(pady=(5, 10))
+
+        if self.settings_manager.display_help:
+            self.show_add_pose_help_popup()
 
         self.root.wait_window(self.add_pose_window)
         self.gesture_controller.unpause()
@@ -338,3 +371,85 @@ class GestureApp:
                     self.add_pose_preview_label.config(image=self.live_image_add)
 
         self.root.after(15, self.update_camera_preview)
+
+    def show_camera_error(self):
+        messagebox.showerror("Camera Error", f"Failed to open camera:\n{self.camera_error}")
+
+    def save_settings(self):
+        try:
+            index = int(self.webcam_index_var.get())
+        except ValueError:
+            messagebox.showerror("Error", "Webcam index must be a number.", parent=self.settings_window)
+            return
+
+        self.settings_manager.set_webcam_index_setting(index)
+        self.settings_manager.set_display_help_setting(self.display_help_var.get())
+        self.settings_window.destroy()
+
+    def restore_defaults(self):
+        self.settings_manager.set_webcam_index_setting(0)
+        self.settings_manager.set_display_help_setting(True)
+
+        self.webcam_index_var.set("0")
+        self.display_help_var.set(True)
+
+        self.settings_window.destroy()
+
+    def show_main_help_popup(self):
+        help_window = Toplevel(self.root)
+        help_window.title("Welcome to GestCTRL!")
+        self.set_geometry(help_window, 400, 300)
+        help_window.resizable(False, False)
+
+        help_window.lift()
+        help_window.attributes('-topmost', True)
+        help_window.focus_force()
+
+        message = (
+            "Welcome to GestCTRL!\n\n"
+            "- Add a new pose with the 'Add Pose' button\n"
+            "- Assign actions to poses by double-clicking them\n"
+            "- Train the model after adding new poses\n"
+            "- Use Settings to adjust webcam and help options\n"
+        )
+
+        label = tk.Label(help_window, text = message, justify = "left", wraplength = 380, padx = 10, pady = 10)
+        label.pack(expand = True, fill = "both")
+
+        def close_help():
+            help_window.destroy()
+            self.root.lift()
+            self.root.focus_force()
+
+        close_button = ttk.Button(help_window, text = "Close", command = close_help)
+        close_button.pack(pady = 10)
+
+    def show_add_pose_help_popup(self):
+        help_window = Toplevel(self.add_pose_window)
+        help_window.title("Adding a New Pose")
+        self.set_geometry(help_window, 400, 300)
+        help_window.resizable(False, False)
+
+        help_window.lift()
+        help_window.attributes('-topmost', True)
+        help_window.focus_force()
+
+        message = (
+            "Adding a New Pose:\n\n"
+            "- Type a name for your new pose\n"
+            "- Click 'Record Pose' to start capturing samples\n"
+            "- Press ENTER to record a frame\n"
+            "- Press ESC to finish recording\n"
+            "- After recording, retrain the model to update it"
+        )
+
+        label = tk.Label(help_window, text = message, justify = "left", wraplength = 380, padx = 10, pady = 10)
+        label.pack(expand = True, fill = "both")
+
+        def close_help():
+            help_window.destroy()
+            self.add_pose_window.lift()
+            self.add_pose_window.focus_force()
+
+        close_button = ttk.Button(help_window, text = "Close", command = close_help)
+        close_button.pack(pady = 10)
