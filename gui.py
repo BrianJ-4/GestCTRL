@@ -7,6 +7,7 @@ from PIL import ImageTk, Image
 import sv_ttk
 import threading
 import mediapipe as mp
+import shutil
 
 from gesture_manager import GestureManager
 from model_trainer import train_model
@@ -387,11 +388,23 @@ class GestureApp:
         self.settings_window.destroy()
 
     def restore_defaults(self):
+        # Reset settings
         self.settings_manager.set_webcam_index_setting(0)
         self.settings_manager.set_display_help_setting(True)
-
         self.webcam_index_var.set("0")
         self.display_help_var.set(True)
+
+        # Reset pose data + model + mappings
+        shutil.rmtree('./data')
+        shutil.rmtree('./model')
+        shutil.copytree('./default_data/data', './data')
+        shutil.copytree('./default_data/model', './model')
+
+        self.changed = True
+        self.update_train_button()
+        self.updateList()
+        if hasattr(self, 'add_pose_window') and self.add_pose_window.winfo_exists():
+            self.updateListPoses()
 
         self.settings_window.destroy()
 
