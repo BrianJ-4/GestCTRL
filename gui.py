@@ -269,6 +269,7 @@ class GestureApp:
         frame = self.camera_manager.get_frame()
         if frame is not None:
             frame = frame.copy()
+            frame = cv2.flip(frame, 1)
 
             hands = self.gesture_controller.hands
             results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
