@@ -23,10 +23,14 @@ class GestureRecorder:
     def start_recording(self, pose_name):
         self.pose_name = pose_name
         self.reading = True
+        if not self.cap.isOpened():
+            self.cap.open(0)
 
     def stop_recording(self):
         self.pose_name = None
         self.reading = False
+        if self.cap.isOpened():
+            self.cap.release()
 
     def record_frame(self):
         if self.reading and self.current_landmarks:
@@ -61,9 +65,6 @@ class GestureRecorder:
             # Flip image for mirror view
             cv2.imshow('Pose Recorder', cv2.flip(image, 1))
             key = cv2.waitKey(5)
-            if key == 27:
-                self.stop()
-                break
     
     def stop(self):
         self.running = False

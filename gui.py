@@ -1,4 +1,3 @@
-import cv2
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -6,8 +5,6 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 import sv_ttk
 import threading
-import time
-import keyboard
 
 from gesture_manager import GestureManager
 from model_trainer import train_model
@@ -29,7 +26,6 @@ class GestureApp:
         self.action_controller = ActionController()
         self.gesture_manager = GestureManager()
         self.gesture_controller = gesture_controller
-        self.pose_recorder = GestureRecorder()
 
         # Set theme
         sv_ttk.set_theme("dark")
@@ -178,32 +174,36 @@ class GestureApp:
             return
         
         self.add_pose_record_button.config(state="disabled", text="Recording...")
+        self.pose_recorder = GestureRecorder()
         self.pose_recorder.start_recording(new_pose)
-        #Problems with the add pose button not being able to be pressed twice, might have to do with how I use the threading aspect (Will fix when I get back)
-        threading.Thread(target=self.pose_recorder.run, daemon=True).start()
-        try:
-            while self.pose_recorder.running:
-                if keyboard.is_pressed('enter'):
-                    self.pose_recorder.record_frame()
-                    print("Frame saved.")
-                    time.sleep(0.2)
-                elif keyboard.is_pressed('esc'):
-                    self.pose_recorder.stop_recording()
-                    break
-                time.sleep(0.05)
-        except KeyboardInterrupt:
-            self.pose_recorder.stop()
-        finally:
-            self.add_pose_window.after(500, lambda: self.recording_finished())
+        self.recording_thread = threading.Thread(target=self.pose_recorder.run, daemon=True)
+        self.recording_thread.start()
+
+        self.add_pose_window.bind("<Return>", self.on_enter_pressed)
+        self.add_pose_window.bind("<Escape>", self.on_escape_pressed)
         
-    def recording_finished(self):
+    def on_enter_pressed(self, event=None):
+        if self.pose_recorder and self.pose_recorder.running:
+            self.pose_recorder.record_frame()
+            print("Frame saved.")
+
+    def on_escape_pressed(self, event=None):
+        if self.pose_recorder and self.pose_recorder.running:
+            self.pose_recorder.stop_recording()
+            self.pose_recorder.stop()
+            self.add_pose_window.after(500, lambda: self.recording_finished(self.pose_recorder))
+            self.add_pose_window.unbind("<Return>")
+            self.add_pose_window.unbind("<Escape>")
+        
+    def recording_finished(self, pose_recorder):
         self.pose_recorder.stop()
 
         #Changing Button Back
         self.add_pose_record_button.config(state="normal", text="Record Pose")    
         self.changed = True
         self.update_train_button()
-        self.updateListPoses
+        self.updateListPoses()
+        self.updateList()
 
     def open_pose_menu(self, event):
         selected_item = self.pose_tree.focus()
