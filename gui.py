@@ -125,6 +125,7 @@ class GestureApp:
             self.pose_tree.insert("", "end", values = (pose, action))
 
     def add_pose_ui(self):
+        self.gesture_controller.pause()
         self.add_pose_window = Toplevel(self.root)
         self.add_pose_window.title("Add Pose")
         self.set_geometry(self.add_pose_window, 900, 600)
@@ -160,6 +161,8 @@ class GestureApp:
         self.add_pose_record_button = ttk.Button(self.add_pose_right_frame, text="Record Pose", command=self.record_button_clicked)
         self.add_pose_record_button.pack(pady=(5, 10))
 
+        self.add_pose_window.protocol("WM_DELETE_WINDOW", lambda: self.resume_startui())
+
     def updateListPoses(self):
         self.add_pose_tree.delete(*self.add_pose_tree.get_children())
         poses = self.gesture_manager.get_all_poses()
@@ -180,8 +183,6 @@ class GestureApp:
         self.add_pose_record_button.config(state="disabled", text="Recording...")
         self.pose_recorder = GestureRecorder(self.camera_manager)
         self.pose_recorder.start_recording(new_pose)
-        self.recording_thread = threading.Thread(target=self.pose_recorder.run, daemon=True)
-        self.recording_thread.start()
 
         self.add_pose_window.bind("<Return>", self.on_enter_pressed)
         self.add_pose_window.bind("<Escape>", self.on_escape_pressed)
@@ -201,6 +202,7 @@ class GestureApp:
         
     def recording_finished(self):
         self.pose_recorder.stop()
+        self.gesture_controller.unpause()
 
         #Changing Button Back
         self.add_pose_record_button.config(state="normal", text="Record Pose")    
@@ -300,3 +302,7 @@ class GestureApp:
                     self.add_pose_preview_label.config(image=self.live_image_add)
 
         self.root.after(15, self.update_camera_preview)
+
+    def resume_startui(self):
+        self.gesture_controller.unpause()
+        self.add_pose_window.destroy()

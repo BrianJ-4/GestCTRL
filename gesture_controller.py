@@ -45,6 +45,7 @@ class CursorMovementThread(threading.Thread):
 class GestureController:
     def __init__(self, camera_manager):
         self.running = False
+        self.paused = False
         self.camera_manager = camera_manager
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
@@ -101,6 +102,10 @@ class GestureController:
         self.running = True
         self.movement_thread.start()
         while self.running:
+            if self.paused:
+                time.sleep(.05)
+                continue
+
             frame = self.camera_manager.get_frame()
             if frame is None:
                 continue
@@ -168,6 +173,12 @@ class GestureController:
     def stop(self):
         self.running = False
         self.movement_thread.stop()
+
+    def pause(self):
+        self.paused = True
+
+    def unpause(self):
+        self.paused = False
 
     def reload_model(self):
         self.interpreter = tflite.Interpreter(model_path = "model/gesture_model.tflite")
