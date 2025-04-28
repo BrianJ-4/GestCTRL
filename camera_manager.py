@@ -1,5 +1,6 @@
 import cv2
 import threading
+import time
 
 class CameraManager:
     def __init__(self, camera_index = 0):
@@ -14,7 +15,7 @@ class CameraManager:
             return
         self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
         if not self.cap.isOpened():
-            raise RuntimeError("Cannot open camera: " + self.camera_index)
+            raise RuntimeError("Cannot open camera: " + str(self.camera_index))
         self.running = True
         self.thread = threading.Thread(target = self.update_frames, daemon = True)
         self.thread.start()
@@ -25,6 +26,8 @@ class CameraManager:
             if success:
                 with self.lock:
                     self.latest_frame = frame.copy()
+            else:
+                time.sleep(0.05)
 
     def get_frame(self):
         with self.lock:
