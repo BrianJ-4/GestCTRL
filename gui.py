@@ -161,7 +161,8 @@ class GestureApp:
         self.add_pose_record_button = ttk.Button(self.add_pose_right_frame, text="Record Pose", command=self.record_button_clicked)
         self.add_pose_record_button.pack(pady=(5, 10))
 
-        self.add_pose_window.protocol("WM_DELETE_WINDOW", lambda: self.resume_startui())
+        self.root.wait_window(self.add_pose_window)
+        self.gesture_controller.unpause()
 
     def updateListPoses(self):
         self.add_pose_tree.delete(*self.add_pose_tree.get_children())
@@ -179,7 +180,7 @@ class GestureApp:
         if not new_pose or new_pose == "Insert Pose Name":
             messagebox.showwarning("Warning", "Please Enter a Name", parent=self.add_pose_window)
             return
-        
+
         self.add_pose_record_button.config(state="disabled", text="Recording...")
         self.pose_recorder = GestureRecorder(self.camera_manager)
         self.pose_recorder.start_recording(new_pose)
@@ -271,7 +272,7 @@ class GestureApp:
         frame = self.camera_manager.get_frame()
         if frame is not None:
             frame = frame.copy()
-            frame = cv2.flip(frame, 1)
+            #frame = cv2.flip(frame, 1)
 
             hands = self.gesture_controller.hands
             results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -302,7 +303,3 @@ class GestureApp:
                     self.add_pose_preview_label.config(image=self.live_image_add)
 
         self.root.after(15, self.update_camera_preview)
-
-    def resume_startui(self):
-        self.gesture_controller.unpause()
-        self.add_pose_window.destroy()
