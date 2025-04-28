@@ -20,6 +20,7 @@ def main():
     def on_close():
         gesture_controller.stop()
         gesture_thread.join()
+        camera_manager.stop()
         root.destroy()
 
     root.protocol("WM_DELETE_WINDOW", on_close)  # Handle window closing properly
