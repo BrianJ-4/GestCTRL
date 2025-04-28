@@ -1,3 +1,4 @@
+import cv2
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -5,6 +6,7 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 import sv_ttk
 import threading
+import mediapipe as mp
 
 from gesture_manager import GestureManager
 from model_trainer import train_model
@@ -13,7 +15,7 @@ from pose_recorder import GestureRecorder
 from action_controller import ActionController
 
 class GestureApp:
-    def __init__(self, root, gesture_controller):
+    def __init__(self, root, gesture_controller, camera_manager):
         # Window setup
         self.root = root
         self.root.title("GestCTRL")
@@ -26,6 +28,7 @@ class GestureApp:
         self.action_controller = ActionController()
         self.gesture_manager = GestureManager()
         self.gesture_controller = gesture_controller
+        self.camera_manager = camera_manager
 
         # Set theme
         sv_ttk.set_theme("dark")
@@ -67,12 +70,12 @@ class GestureApp:
         self.pose_tree_scrollbar.pack(side="right", fill="y")
         self.pose_tree.bind("<Double-1>", self.open_pose_menu)
 
-        #Preview Frame (Here as an example)
+        # Preview Frame
         self.preview_frame = ttk.Frame(self.root, width=650, height=450)
-        self.preview_frame.pack(side="left", anchor="n", fill="x", padx = 10, pady = 10)
         self.preview_frame.pack_propagate(False)
-        self.preview_label = tk.Label(self.preview_frame)
-        self.preview_label.pack(side="top", anchor="n", fill="x", expand=True)
+        self.preview_frame.pack(side="left", anchor="n", padx=10, pady=10)
+        self.preview_label = tk.Label(self.preview_frame, bg="black")
+        self.preview_label.pack(fill="both", expand=True)
 
         #Add Pose Button
         self.add_pose_button = ttk.Button(self.button_row_frame, text="Add Pose", command=self.add_pose_ui)
@@ -87,6 +90,7 @@ class GestureApp:
         self.settings_button.pack(pady=10)
 
         self.updateList()
+        self.root.after_idle(self.start_camera_loop)
 
     def settings_ui(self):
             self.settings_window = Toplevel(self.root)
@@ -195,7 +199,7 @@ class GestureApp:
             self.add_pose_window.unbind("<Return>")
             self.add_pose_window.unbind("<Escape>")
         
-    def recording_finished(self, pose_recorder):
+    def recording_finished(self):
         self.pose_recorder.stop()
 
         #Changing Button Back
@@ -257,3 +261,41 @@ class GestureApp:
         self.changed = True
         self.update_train_button()
         window.destroy()
+
+    def start_camera_loop(self):
+        self.update_camera_preview()
+
+    def update_camera_preview(self):
+        frame = self.camera_manager.get_frame()
+        if frame is not None:
+            frame = frame.copy()
+
+            hands = self.gesture_controller.hands
+            results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            
+            if results.multi_hand_landmarks:
+                for hand_landmarks in results.multi_hand_landmarks:
+                    mp.solutions.drawing_utils.draw_landmarks(
+                        frame,
+                        hand_landmarks,
+                        mp.solutions.hands.HAND_CONNECTIONS
+                    )
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame)
+
+            width = self.preview_label.winfo_width()
+            height = self.preview_label.winfo_height()
+            if width > 10 and height > 10:
+                img_resized = img.resize((width, height))
+                self.live_image = ImageTk.PhotoImage(img_resized)
+                self.preview_label.config(image = self.live_image)
+
+                if hasattr(self, 'add_pose_preview_label') and self.add_pose_preview_label.winfo_exists():
+                    width = self.add_pose_preview_label.winfo_width()
+                    height = self.add_pose_preview_label.winfo_height()
+                    img_resized_add = img.resize((width, height))
+                    self.live_image_add = ImageTk.PhotoImage(img_resized_add)
+                    self.add_pose_preview_label.config(image=self.live_image_add)
+
+        self.root.after(15, self.update_camera_preview)
