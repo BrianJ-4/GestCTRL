@@ -184,6 +184,8 @@ class GestureApp:
         self.add_pose_record_button.config(state="disabled", text="Recording...")
         self.pose_recorder = GestureRecorder(self.camera_manager)
         self.pose_recorder.start_recording(new_pose)
+        self.recording_thread = threading.Thread(target=self.pose_recorder.run, daemon=True)
+        self.recording_thread.start()
 
         self.add_pose_window.bind("<Return>", self.on_enter_pressed)
         self.add_pose_window.bind("<Escape>", self.on_escape_pressed)
@@ -203,7 +205,6 @@ class GestureApp:
         
     def recording_finished(self):
         self.pose_recorder.stop()
-        self.gesture_controller.unpause()
 
         #Changing Button Back
         self.add_pose_record_button.config(state="normal", text="Record Pose")    
