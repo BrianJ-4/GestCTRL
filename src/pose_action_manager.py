@@ -1,4 +1,5 @@
 import json
+from utils import resource_path
 
 class PoseActionManager():
     def __init__(self):
@@ -6,7 +7,7 @@ class PoseActionManager():
 
     def load_mappings(self):
         try:
-            with open("data/mappings.json", "r") as file:
+            with open(resource_path("data/mappings.json"), "r") as file:
                 data = json.load(file)
                 return data
         except FileNotFoundError:
@@ -14,7 +15,7 @@ class PoseActionManager():
             return {}
         
     def save_mappings(self):
-        with open("data/mappings.json", "w") as file:
+        with open(resource_path("data/mappings.json"), "w") as file:
             json.dump(self.mappings, file)
     
     def get_pose_action(self, pose):

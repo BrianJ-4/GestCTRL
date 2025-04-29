@@ -1,8 +1,9 @@
 import csv
 from pose_action_manager import PoseActionManager
+from utils import resource_path
 
 class GestureManager:
-    def __init__(self, gesture_file = "data/gestures.csv", pose_file = "data/poses.txt"):
+    def __init__(self, gesture_file = resource_path("data/gestures.csv"), pose_file = resource_path("data/poses.txt")):
         self.gesture_file = gesture_file
         self.pose_file = pose_file
         self.pose_action_manager = PoseActionManager()

@@ -14,6 +14,7 @@ from model_trainer import train_model
 from pose_action_manager import PoseActionManager
 from pose_recorder import GestureRecorder
 from action_controller import ActionController
+from utils import resource_path
 
 class GestureApp:
     def __init__(self, root, gesture_controller, camera_manager, settings_manager, camera_error = None):
@@ -36,12 +37,12 @@ class GestureApp:
         sv_ttk.set_theme("dark")
 
         # Load icons
-        self.save_icon = tk.PhotoImage(file = './assets/icons/save.png')
-        self.delete_icon = tk.PhotoImage(file = './assets/icons/delete.png')
-        self.add_icon = tk.PhotoImage(file = './assets/icons/add.png')
-        self.train_icon = tk.PhotoImage(file = './assets/icons/train.png')
-        self.train_icon_white = tk.PhotoImage(file = './assets/icons/train_white.png')
-        self.settings_icon = tk.PhotoImage(file = './assets/icons/settings.png')
+        self.save_icon = tk.PhotoImage(file = resource_path('./assets/icons/save.png'))
+        self.delete_icon = tk.PhotoImage(file = resource_path('./assets/icons/delete.png'))
+        self.add_icon = tk.PhotoImage(file = resource_path('./assets/icons/add.png'))
+        self.train_icon = tk.PhotoImage(file = resource_path('./assets/icons/train.png'))
+        self.train_icon_white = tk.PhotoImage(file = resource_path('./assets/icons/train_white.png'))
+        self.settings_icon = tk.PhotoImage(file = resource_path('./assets/icons/settings.png'))
 
         # Used to track when the model should be retrained based on user adding/deleting poses
         self.changed = False
@@ -262,7 +263,7 @@ class GestureApp:
     def on_enter_pressed(self, event=None):
         if self.pose_recorder and self.pose_recorder.running:
             self.pose_recorder.record_frame()
-            print("Frame saved.")
+            # print("Frame saved.")
 
     def on_escape_pressed(self, event=None):
         if self.pose_recorder and self.pose_recorder.running:
@@ -395,10 +396,10 @@ class GestureApp:
         self.display_help_var.set(True)
 
         # Reset pose data + model + mappings
-        shutil.rmtree('./data')
-        shutil.rmtree('./model')
-        shutil.copytree('./default_data/data', './data')
-        shutil.copytree('./default_data/model', './model')
+        shutil.rmtree(resource_path('./data'))
+        shutil.rmtree(resource_path('./model'))
+        shutil.copytree(resource_path('./default_data/data', './data'))
+        shutil.copytree(resource_path('./default_data/model', './model'))
 
         self.changed = True
         self.update_train_button()
