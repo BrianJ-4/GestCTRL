@@ -8,6 +8,7 @@ import time
 import json
 from pose_action_manager import PoseActionManager
 from action_controller import ActionController
+from utils import resource_path
 
 
 class CursorMovementThread(threading.Thread):
@@ -54,7 +55,7 @@ class GestureController:
             min_detection_confidence = 0.5,
             min_tracking_confidence = 0.5
         )
-        self.interpreter = tflite.Interpreter(model_path = "model/gesture_model.tflite")
+        self.interpreter = tflite.Interpreter(model_path = resource_path("model/gesture_model.tflite"))
         self.interpreter.allocate_tensors()
         self.input_details = self.interpreter.get_input_details()
         self.output_details = self.interpreter.get_output_details()
@@ -93,10 +94,10 @@ class GestureController:
     
     def load_gesture_labels(self):
         try:
-            with open("data/poses.txt", "r") as file:
+            with open(resource_path("data/poses.txt"), "r") as file:
                 return [line.strip() for line in file if line.strip()]
         except FileNotFoundError:
-            print("Warning: poses.txt not found. Using empty label list.")
+            # print("Warning: poses.txt not found. Using empty label list.")
             return []
 
     def run(self):
@@ -183,9 +184,9 @@ class GestureController:
         self.paused = False
 
     def reload_model(self):
-        self.interpreter = tflite.Interpreter(model_path = "model/gesture_model.tflite")
+        self.interpreter = tflite.Interpreter(model_path = resource_path("model/gesture_model.tflite"))
         self.interpreter.allocate_tensors()
         self.input_details = self.interpreter.get_input_details()
         self.output_details = self.interpreter.get_output_details()
         self.GESTURE_LABELS = self.load_gesture_labels()
-        print("Gesture model reloaded")
+        # print("Gesture model reloaded")
