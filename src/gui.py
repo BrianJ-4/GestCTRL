@@ -398,8 +398,8 @@ class GestureApp:
         # Reset pose data + model + mappings
         shutil.rmtree(resource_path('./data'))
         shutil.rmtree(resource_path('./model'))
-        shutil.copytree(resource_path('./default_data/data', './data'))
-        shutil.copytree(resource_path('./default_data/model', './model'))
+        shutil.copytree(resource_path('./default_data/data'), './data')
+        shutil.copytree(resource_path('./default_data/model'), './model')
 
         self.changed = True
         self.update_train_button()
